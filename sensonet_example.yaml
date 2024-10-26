@@ -26,16 +26,8 @@ chargers:
 vehicles:
 - type: template
   template: sensonet_vehicle 
-  title: Arotherm  # Kann frei gewählt werden
-  name: arotherm # Kann frei gewählt werden
-  pvusestrategy: hotwater_then_heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
-  icon: heater
-  phases: 3
-- type: template
-  template: sensonet_vehicle 
-  title: Arotherm-Heating  # Kann frei gewählt werden
-  name: arotherm-heating # Kann frei gewählt werden
-  pvusestrategy: heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
+  title: Aerotherm-Split  # Kann frei gewählt werden
+  name: aerotherm # Kann frei gewählt werden
   icon: heater
   phases: 3
 
@@ -43,7 +35,7 @@ loadpoints:
 - title: Wärmepumpe # Kann frei gewählt werden
   charger: vaillant # Entsprechend dem im Abschnitt 'chargers' gewählten Namen
   meter: heatpumppwr # Entsprechend dem im Abschnitt 'meters' gewählten Namen. Sonst diese Zeile streichen
-  vehicle: arotherm # Entsprechend dem im Abschnitt 'vehicles' gewählten Namen
+  vehicle: aerotherm # Entsprechend dem im Abschnitt 'vehicles' gewählten Namen
   mode: off # Zur Sicherheit beim Start von evcc auf 'off'. Kann aber auch auf 'pv' gesetzt werden
   enable:
       threshold: -2500
