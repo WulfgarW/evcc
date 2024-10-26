@@ -48,6 +48,8 @@
 		:id="id"
 		class="w-50"
 		v-model="value"
+		equal-width
+		transparent
 		:options="[
 			{ value: false, name: $t('config.options.boolean.no') },
 			{ value: true, name: $t('config.options.boolean.yes') },

@@ -15,11 +15,15 @@
 				:pvExport="pvExport"
 				:batteryCharge="batteryCharge"
 				:batteryDischarge="batteryDischarge"
+				:batteryGridCharge="batteryGridChargeActive"
+				:batteryHold="batteryHold"
 				:pvProduction="pvProduction"
 				:homePower="homePower"
 				:batterySoc="batterySoc"
 				:powerUnit="powerUnit"
 				:vehicleIcons="vehicleIcons"
+				:inPower="inPower"
+				:outPower="outPower"
 			/>
 		</div>
 		<div
@@ -88,13 +92,19 @@
 							icon="battery"
 							:power="batteryDischarge"
 							:powerUnit="powerUnit"
-							:soc="batterySoc"
+							:iconProps="{
+								hold: batteryHold,
+								soc: batterySoc,
+								gridCharge: batteryGridChargeActive,
+							}"
 							:details="batterySoc"
 							:detailsFmt="batteryFmt"
 							detailsClickable
 							data-testid="energyflow-entry-batterydischarge"
 							@details-clicked="openBatterySettingsModal"
-						/>
+						>
+							<template v-if="batteryGridChargeActive" #subline> &nbsp; </template>
+						</EnergyflowEntry>
 						<EnergyflowEntry
 							:name="$t('main.energyflow.gridImport')"
 							icon="powersupply"
@@ -135,7 +145,7 @@
 								})
 							"
 							icon="vehicle"
-							:vehicleIcons="vehicleIcons"
+							:iconProps="{ names: vehicleIcons }"
 							:power="loadpointsPower"
 							:powerUnit="powerUnit"
 							:details="
@@ -155,7 +165,11 @@
 							icon="battery"
 							:power="batteryCharge"
 							:powerUnit="powerUnit"
-							:soc="batterySoc"
+							:iconProps="{
+								hold: batteryHold,
+								soc: batterySoc,
+								gridCharge: batteryGridChargeActive,
+							}"
 							:details="batterySoc"
 							:detailsFmt="batteryFmt"
 							detailsClickable
