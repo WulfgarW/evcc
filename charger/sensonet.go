@@ -3,9 +3,9 @@ package charger
 import (
 	"fmt"
 
+	sensonetlib "github.com/WulfgarW/sensonet/sensonet"
 	"github.com/evcc-io/evcc/api"
 	"github.com/evcc-io/evcc/charger/sensonet"
-	"github.com/evcc-io/evcc/charger/vaillantEbus"
 	"github.com/evcc-io/evcc/util"
 )
 
@@ -99,14 +99,14 @@ func (c *Sensonet) Status() (api.ChargeStatus, error) {
 
 func (c *Sensonet) ModeText() string {
 	switch c.conn.CurrentQuickmode() {
-	case sensonet.QUICKMODE_HOTWATER:
+	case sensonetlib.QUICKMODE_HOTWATER:
 		return " (Hotwater Boost active)"
-	case sensonet.QUICKMODE_HEATING:
+	case sensonetlib.QUICKMODE_HEATING:
 		if c.conn.QuickVetoExpiresAt() != "" {
 			return " (Heating Quick Veto active. Ends " + c.conn.QuickVetoExpiresAt() + ")"
 		}
 		return " (Heating Quick Veto active)"
-	case vaillantEbus.QUICKMODE_NOTHING:
+	case sensonetlib.QUICKMODE_NOTHING:
 		return " (charger running idle)"
 	}
 	return " (regular mode; hotwater temp. shown)"

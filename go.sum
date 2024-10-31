@@ -23,6 +23,8 @@ github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWX
 github.com/Shopify/toxiproxy v2.1.4+incompatible h1:TKdv8HiTLgE5wdJuEML90aBgNWsokNbMijUGhmcoBJc=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
+github.com/WulfgarW/sensonet v0.0.0-20241030185302-f40267c40bb8 h1:2TYn4cHfpn0Fu56d8dcjZ7B8+bibV9cbxIk0i4/Z1cY=
+github.com/WulfgarW/sensonet v0.0.0-20241030185302-f40267c40bb8/go.mod h1:WSERoG2+ELRZs/wNDNDjBX1HumvCrGNN7OrY0sF50gI=
 github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5/go.mod h1:SkGFH1ia65gfNATL8TAiHDNxPzPdmEL5uirI2Uyuz6c=
 github.com/ahmetb/go-linq/v3 v3.2.0 h1:BEuMfp+b59io8g5wYzNoFe9pWPalRklhlhbiU3hYZDE=
 github.com/ahmetb/go-linq/v3 v3.2.0/go.mod h1:haQ3JfOeWK8HpVxMtHHEMPVgBKiYyQ+f1/kLZh/cj9U=
@@ -145,6 +147,8 @@ github.com/enbility/zeroconf/v2 v2.0.0-20240920094356-be1cae74fda6/go.mod h1:Bsz
 github.com/envoyproxy/go-control-plane v0.6.9/go.mod h1:SBwIajubJHhxtWwsL9s8ss4safvEdbitLhGGK48rN6g=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
+github.com/ernesto-jimenez/httplogger v0.0.0-20220128121225-117514c3f345 h1:AZLrCR38RDhsyCQakz1UxCx72As18Ai5mObrKvT8DK8=
+github.com/ernesto-jimenez/httplogger v0.0.0-20220128121225-117514c3f345/go.mod h1:pw+gaKQ52Cl/SrERU62yQAiWauPpLgKpuR1hkxwL4tM=
 github.com/evcc-io/modbus v0.0.0-20241004132439-d6ad2da50a88 h1:r19xxUsbuh8LhO6dgg/OWVlKRIdbpy26cESeO+EM2pY=
 github.com/evcc-io/modbus v0.0.0-20241004132439-d6ad2da50a88/go.mod h1:WpbUAyptAAi0VAriSRopZa6uhiJOJCTz7KFvgGtNRXc=
 github.com/evcc-io/ocpp-go v0.0.0-20240914122959-0d109e403130 h1:U4xSZBknKsMDFQtLU3gdkDUylfN9kRUj01offtqs8lY=
@@ -658,10 +662,8 @@ github.com/subosito/gotenv v1.6.0/go.mod h1:Dk4QP5c2W3ibzajGcXpNraDfq2IrhjMIvMSW
 github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07/go.mod h1:kDXzergiv9cbyO7IOYJZWg1U88JhDg3PB6klq9Hg2pA=
 github.com/teivah/onecontext v1.3.0 h1:tbikMhAlo6VhAuEGCvhc8HlTnpX4xTNPTOseWuhO1J0=
 github.com/teivah/onecontext v1.3.0/go.mod h1:hoW1nmdPVK/0jrvGtcx8sCKYs2PiS4z0zzfdeuEVyb0=
-github.com/teslamotors/vehicle-command v0.2.0 h1:3FNYKCyqcqHqV3oxPATCcvJ2wAOjaAOCHrPQEV91GzM=
-github.com/teslamotors/vehicle-command v0.2.0/go.mod h1:OwSUp/6Y91wfNTSWPl6z2bTEr1dz/7InsGRcIVnIZPk=
-github.com/thanhpk/randstr v1.0.6 h1:psAOktJFD4vV9NEVb3qkhRSMvYh4ORRaj1+w/hn4B+o=
-github.com/thanhpk/randstr v1.0.6/go.mod h1:M/H2P1eNLZzlDwAzpkkkUvoyNNMbzRGhESZuEQk3r0U=
+github.com/teslamotors/vehicle-command v0.2.1 h1:DJCy9zmjgZH1woNYYCkO+FNvIvzn1O+b6hXJ+ijnxcs=
+github.com/teslamotors/vehicle-command v0.2.1/go.mod h1:T9UGDQPnIE08bjUCEjdDVcgCw3yfP4BzslizI03yRcI=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/traefik/yaegi v0.16.1 h1:f1De3DVJqIDKmnasUF6MwmWv1dSEEat0wcpXhD2On3E=
 github.com/traefik/yaegi v0.16.1/go.mod h1:4eVhbPb3LnD2VigQjhYbEJ69vDRFdT2HQNrXx8eEwUY=
