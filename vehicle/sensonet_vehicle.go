@@ -30,11 +30,16 @@ func NewSensonetVehicleFromConfig(other map[string]interface{}) (api.Vehicle, er
 		return nil, err
 	}
 
+	//Get pointer to the connection struct of the charger sensonet
+	conn, err := sensonet.GetSensoNetConn()
+	if err != nil {
+		return nil, err
+	}
+
 	v := &Sensonet_vehicle{
 		embed:         &cc.embed,
 		PvUseStrategy: cc.PvUseStrategy,
-		//Pointer Sensonet_vehicle.conn is set to point to the connection struct of the charger sensonet
-		conn: sensonet.SensoNetConn,
+		conn:          conn,
 	}
 
 	if v.Title() == "" {

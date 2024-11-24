@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	sensonetlib "github.com/WulfgarW/sensonet/sensonet"
+	sensonetlib "github.com/WulfgarW/sensonet"
 )
 
 type Switch struct {

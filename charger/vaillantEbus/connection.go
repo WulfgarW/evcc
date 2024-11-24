@@ -44,38 +44,54 @@ type Connection struct {
 }
 
 // Global variable SensoNetConn is used to make data available in vehicle vks (not needed without vehicle vks)
-var VaillantEbusConn *Connection
+var vaillantEbusConn *Connection
+var vaillantEbusConnInitialised bool
 
 // NewConnection creates a new Sensonet device connection.
 func NewConnection(ebusdAddress, pvUseStrategy string, heatingZone, phases int, heatingTemperatureOffset float64) (*Connection, error) {
-	log := util.NewLogger("vaillantEbus")
-	client := request.NewHelper(log)
-	conn := &Connection{
-		Helper: client,
-	}
-	conn.ebusdAddress = ebusdAddress
-	conn.pvUseStrategy = pvUseStrategy
-	conn.heatingZone = heatingZone
-	conn.phases = phases
-	//	conn.heatingVetoDuration = heatingVetoDuration
-	conn.heatingTemperatureOffset = heatingTemperatureOffset
-	conn.log = log
-	conn.currentQuickmode = ""
-	conn.quickmodeStarted = time.Now()
-	conn.getSystemUpdateInterval = 2 * time.Minute
-	VaillantEbusConn = conn //this is not needed without vehicle vaillant-ebus_vehicle
+	if vaillantEbusConnInitialised {
+		vaillantEbusConn.log.DEBUG.Println("In connection.NewConnection: vaillantEbusConn already initialised")
+		return vaillantEbusConn, nil
+	} else {
+		log := util.NewLogger("vaillantEbus")
+		client := request.NewHelper(log)
+		conn := &Connection{
+			Helper: client,
+		}
+		conn.ebusdAddress = ebusdAddress
+		conn.pvUseStrategy = pvUseStrategy
+		conn.heatingZone = heatingZone
+		conn.phases = phases
+		//	conn.heatingVetoDuration = heatingVetoDuration
+		conn.heatingTemperatureOffset = heatingTemperatureOffset
+		conn.log = log
+		conn.currentQuickmode = ""
+		conn.quickmodeStarted = time.Now()
+		conn.getSystemUpdateInterval = 2 * time.Minute
+		vaillantEbusConn = conn //this is not needed without vehicle vaillant-ebus_vehicle
+		vaillantEbusConnInitialised = true
 
-	var err error
+		var err error
 
-	err = conn.connectToEbusd()
-	if err != nil {
-		//err = fmt.Errorf("could not connect to ebusd", err)
+		err = conn.connectToEbusd()
+		if err != nil {
+			//err = fmt.Errorf("could not connect to ebusd", err)
+			return conn, err
+		}
+
+		//var res VaillantRelDataStruct
+		err = conn.getSystem(&conn.relData, true)
 		return conn, err
 	}
+}
 
-	//var res VaillantRelDataStruct
-	err = conn.getSystem(&conn.relData, true)
-	return conn, err
+func GetVaillantEbusConn() (*Connection, error) {
+	if vaillantEbusConnInitialised {
+		return vaillantEbusConn, nil
+	} else {
+		err := fmt.Errorf("Connection to Vaillant via ebus not initialised. ")
+		return vaillantEbusConn, err
+	}
 }
 
 func (c *Connection) connectToEbusd() error {

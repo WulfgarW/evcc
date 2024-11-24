@@ -11,7 +11,7 @@ import (
 	"github.com/ernesto-jimenez/httplogger"
 	"github.com/spf13/jwalterweatherman"
 
-	sensonetlib "github.com/WulfgarW/sensonet/sensonet"
+	sensonetlib "github.com/WulfgarW/sensonet"
 	"github.com/evcc-io/evcc/api"
 
 	"github.com/evcc-io/evcc/util"
@@ -37,8 +37,10 @@ type Connection struct {
 	quickVetoExpiresAt       string
 }
 
-// Global variable SensoNetConn is used to make data available in vehicle vks (not needed without vehicle vks)
-var SensoNetConn *Connection
+// Global variable sensoNetConn is used to make data available in vehicle sensonet-vehicle
+// Global variable sensoNetConnInitialised shows that sensoNetConn is already initialised
+var sensoNetConn *Connection
+var sensoNetConnInitialised bool
 
 // Block for httplogging
 var Timeout = 10 * time.Second
@@ -79,60 +81,74 @@ func (l *httpLogger) LogResponse(req *http.Request, res *http.Response, err erro
 
 // NewConnection creates a new Sensonet device connection.
 func NewConnection(user, password, realm, pvUseStrategy string, heatingZone, phases int, heatingTemperatureOffset float64) (*Connection, error) {
-	utillog := util.NewLogger("sensonet")
-	client := request.NewHelper(utillog)
-	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-		return http.ErrUseLastResponse
-	}
+	if sensoNetConnInitialised {
+		sensoNetConn.log.DEBUG.Println("In connection.NewConnection: sensoNetConn already initialised")
+		return sensoNetConn, nil
+	} else {
+		utillog := util.NewLogger("sensonet")
+		client := request.NewHelper(utillog)
+		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
 
-	conn := &Connection{
-		Helper: client,
-	}
-	conn.user = user
-	conn.password = password
-	conn.realm = realm
-	conn.pvUseStrategy = pvUseStrategy
-	conn.heatingZone = heatingZone
-	conn.phases = phases
-	//	conn.heatingVetoDuration = heatingVetoDuration
-	conn.heatingTemperatureOffset = heatingTemperatureOffset
-	conn.log = utillog
+		conn := &Connection{
+			Helper: client,
+		}
+		conn.user = user
+		conn.password = password
+		conn.realm = realm
+		conn.pvUseStrategy = pvUseStrategy
+		conn.heatingZone = heatingZone
+		conn.phases = phases
+		//	conn.heatingVetoDuration = heatingVetoDuration
+		conn.heatingTemperatureOffset = heatingTemperatureOffset
+		conn.log = utillog
 
-	var err error
-	conn.Client.Jar, err = cookiejar.New(nil)
-	if err != nil {
-		err = fmt.Errorf("could not reset cookie jar. error: %s", err)
-		return conn, err
-	}
+		var err error
+		conn.Client.Jar, err = cookiejar.New(nil)
+		if err != nil {
+			err = fmt.Errorf("could not reset cookie jar. error: %s", err)
+			return conn, err
+		}
 
-	var credentials sensonetlib.CredentialsStruct
-	credentials.User = user
-	credentials.Password = password
-	//Activate httplogger and logging in sensonetlib for log levels TRACE or DEBUG
-	if util.WWlogLevelForArea("sensonet") == jwalterweatherman.LevelTrace || util.WWlogLevelForArea("sensonet") == jwalterweatherman.LevelDebug {
-		log.SetOutput(os.Stderr) //changing output of stadard log to os.stderr. (In main.go, it is set to io.Discard)
-		log := log.New(os.Stderr, "sensonet: ", log.Lshortfile)
-		client.Transport = httplogger.NewLoggedTransport(http.DefaultTransport, newLogger(log))
-	}
-	//client.Transport = http.DefaultTransport //comment this line out, if you wish logging of the http requests in sensonetlib
-	snconn, newtoken, err := sensonetlib.NewConnection(client.Client, &credentials, nil)
-	if err != nil {
-		err = fmt.Errorf("could not get Homes[] information. error: %s", err)
-		return conn, err
-	}
-	utillog.DEBUG.Println("In connection.NewConnection: Call of sensonetlib.NewConnection() successful")
-	utillog.DEBUG.Println("Got new Token. Vaild until: ", newtoken.Expiry)
-	conn.sensonetConn = snconn
-	homes, err := conn.sensonetConn.GetHomes()
-	if err != nil {
-		err = fmt.Errorf("could not get Homes[] information. error: %s", err)
-		return conn, err
-	}
-	conn.systemId = homes[0].SystemID
+		var credentials sensonetlib.CredentialsStruct
+		credentials.User = user
+		credentials.Password = password
+		//Activate httplogger and logging in sensonetlib for log levels TRACE or DEBUG
+		if util.WWlogLevelForArea("sensonet") == jwalterweatherman.LevelTrace || util.WWlogLevelForArea("sensonet") == jwalterweatherman.LevelDebug {
+			log.SetOutput(os.Stderr) //changing output of stadard log to os.stderr. (In main.go, it is set to io.Discard)
+			log := log.New(os.Stderr, "sensonet: ", log.Lshortfile)
+			client.Transport = httplogger.NewLoggedTransport(http.DefaultTransport, newLogger(log))
+		}
+		//client.Transport = http.DefaultTransport //comment this line out, if you wish logging of the http requests in sensonetlib
+		snconn, newtoken, err := sensonetlib.NewConnection(client.Client, &credentials, nil)
+		if err != nil {
+			err = fmt.Errorf("could not get Homes[] information. error: %s", err)
+			return conn, err
+		}
+		utillog.DEBUG.Println("In connection.NewConnection: Call of sensonetlib.NewConnection() successful")
+		utillog.DEBUG.Println("Got new Token. Vaild until: ", newtoken.Expiry)
+		conn.sensonetConn = snconn
+		homes, err := conn.sensonetConn.GetHomes()
+		if err != nil {
+			err = fmt.Errorf("could not get Homes[] information. error: %s", err)
+			return conn, err
+		}
+		conn.systemId = homes[0].SystemID
 
-	SensoNetConn = conn //this is not needed without vehicle sensonet_vehicle
-	return conn, nil
+		sensoNetConn = conn
+		sensoNetConnInitialised = true
+		return conn, nil
+	}
+}
 
+func GetSensoNetConn() (*Connection, error) {
+	if sensoNetConnInitialised {
+		return sensoNetConn, nil
+	} else {
+		err := fmt.Errorf("Connection to sensonet library not initialised. ")
+		return sensoNetConn, err
+	}
 }
 
 func (d *Connection) Phases() int {

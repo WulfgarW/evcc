@@ -3,7 +3,7 @@ package charger
 import (
 	"fmt"
 
-	sensonetlib "github.com/WulfgarW/sensonet/sensonet"
+	sensonetlib "github.com/WulfgarW/sensonet"
 	"github.com/evcc-io/evcc/api"
 	"github.com/evcc-io/evcc/charger/sensonet"
 	"github.com/evcc-io/evcc/util"

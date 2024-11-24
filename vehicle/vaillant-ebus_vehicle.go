@@ -30,11 +30,16 @@ func NewVaillantEbusVehicleFromConfig(other map[string]interface{}) (api.Vehicle
 		return nil, err
 	}
 
+	//Get pointer to the connection struct of the charger vaillant-ebus
+	conn, err := vaillantEbus.GetVaillantEbusConn()
+	if err != nil {
+		return nil, err
+	}
+
 	v := &VaillantEbus_vehicle{
 		embed:         &cc.embed,
 		PvUseStrategy: cc.PvUseStrategy,
-		//Pointer VaillantEbus_vehicle.conn is set to point to the connection struct of the charger vaillant-ebus
-		conn: vaillantEbus.VaillantEbusConn,
+		conn:          conn,
 	}
 
 	if v.Title() == "" {
