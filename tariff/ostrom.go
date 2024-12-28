@@ -176,8 +176,7 @@ func (t *Ostrom) RefreshToken(_ *oauth2.Token) (*oauth2.Token, error) {
 func (t *Ostrom) runStatic(done chan error) {
 	var once sync.Once
 
-	tick := time.NewTicker(time.Hour)
-	for ; true; <-tick.C {
+	for tick := time.Tick(time.Hour); ; <-tick {
 		price, err := t.getFixedPrice()
 		if err != nil {
 			once.Do(func() { done <- err })
@@ -205,16 +204,15 @@ func (t *Ostrom) runStatic(done chan error) {
 func (t *Ostrom) run(done chan error) {
 	var once sync.Once
 
-	tick := time.NewTicker(time.Hour)
-	for ; true; <-tick.C {
+	for tick := time.Tick(time.Hour); ; <-tick {
 		var res ostrom.Prices
 
 		start := now.BeginningOfDay()
 		end := start.AddDate(0, 0, 2)
 
 		params := url.Values{
-			"startDate":  {start.Format(time.RFC3339)},
-			"endDate":    {end.Format(time.RFC3339)},
+			"startDate":  {start.Format("2006-01-02T15:04:05.000Z07:00")},
+			"endDate":    {end.Format("2006-01-02T15:04:05.000Z07:00")},
 			"resolution": {"HOUR"},
 			"zip":        {t.zip},
 		}

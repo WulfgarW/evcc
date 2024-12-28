@@ -8,7 +8,7 @@ require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/PuerkitoBio/goquery v1.10.0
-	github.com/WulfgarW/sensonet v0.0.0-20241123162833-33613117915b
+	github.com/WulfgarW/sensonet v0.0.2-0.20241228113605-f5304e7a183c
 	github.com/andig/go-powerwall v0.2.1-0.20230808194509-dd70cdb6e140
 	github.com/andig/gosunspec v0.0.0-20240918203654-860ce51d602b
 	github.com/andig/mbserver v0.0.0-20230310211055-1d29cbb5820e
@@ -36,8 +36,8 @@ require (
 	github.com/fatih/structs v1.1.0
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-http-utils/etag v0.0.0-20161124023236-513ea8f21eb1
-	github.com/go-playground/validator/v10 v10.22.1
-	github.com/go-telegram/bot v1.10.1
+	github.com/go-playground/validator/v10 v10.23.0
+	github.com/go-telegram/bot v1.11.1
 	github.com/go-viper/mapstructure/v2 v2.2.1
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/gokrazy/updater v0.0.0-20240113102150-4ac511a17e33
@@ -53,7 +53,7 @@ require (
 	github.com/hasura/go-graphql-client v0.13.1
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/insomniacslk/tapo v1.0.1
-	github.com/itchyny/gojq v0.12.16
+	github.com/itchyny/gojq v0.12.17
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/jinzhu/copier v0.4.0
 	github.com/jinzhu/now v1.1.5
@@ -74,38 +74,38 @@ require (
 	github.com/nicksnyder/go-i18n/v2 v2.4.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/philippseith/signalr v0.6.3
-	github.com/prometheus-community/pro-bing v0.4.1
+	github.com/prometheus-community/pro-bing v0.5.0
 	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/common v0.60.1
-	github.com/robertkrimen/otto v0.4.0
+	github.com/robertkrimen/otto v0.5.1
 	github.com/samber/lo v1.47.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/smallnest/chanx v1.2.0
-	github.com/spali/go-rscp v0.2.0
+	github.com/spali/go-rscp v0.2.1
 	github.com/spf13/cast v1.7.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/jwalterweatherman v1.1.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.20.0-alpha.6
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/teslamotors/vehicle-command v0.2.1
 	github.com/traefik/yaegi v0.16.1
 	github.com/tv42/httpunix v0.0.0-20191220191345-2ba4b9c3382c
-	github.com/volkszaehler/mbmd v0.0.0-20241028131242-5830329dc302
+	github.com/volkszaehler/mbmd v0.0.0-20241129224340-d50c56af82d2
 	github.com/writeas/go-strip-markdown/v2 v2.1.1
 	gitlab.com/bboehmke/sunny v0.16.0
 	go.uber.org/mock v0.5.0
-	golang.org/x/crypto v0.28.0
-	golang.org/x/crypto/x509roots/fallback v0.0.0-20241022195102-750a45fe5e47
-	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
-	golang.org/x/net v0.30.0
+	golang.org/x/crypto v0.31.0
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20241127184453-8c4e668694cc
+	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
+	golang.org/x/net v0.31.0
 	golang.org/x/oauth2 v0.24.0
-	golang.org/x/sync v0.9.0
-	golang.org/x/text v0.20.0
-	golang.org/x/tools v0.26.0
-	google.golang.org/grpc v1.67.1
-	google.golang.org/protobuf v1.35.1
+	golang.org/x/sync v0.10.0
+	golang.org/x/text v0.21.0
+	golang.org/x/tools v0.27.0
+	google.golang.org/grpc v1.68.0
+	google.golang.org/protobuf v1.35.2
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/gorm v1.25.12
 )
@@ -192,16 +192,16 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	gitlab.com/c0b/go-ordered-json v0.0.0-20201030195603-febf46534d5a // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/mod v0.21.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
-	golang.org/x/term v0.26.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240823204242-4ba0660f739c // indirect
+	golang.org/x/mod v0.22.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/term v0.27.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
 	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 	modernc.org/libc v1.55.3 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect
-	modernc.org/sqlite v1.33.1 // indirect
+	modernc.org/sqlite v1.34.1 // indirect
 	nhooyr.io/websocket v1.8.17 // indirect
 )
 
