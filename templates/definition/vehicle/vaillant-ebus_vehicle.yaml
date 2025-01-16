@@ -23,7 +23,6 @@ params:
   - name: icon
     default: heater
     advanced: true
-  - preset: vehicle-identify
 render: |
   type: vaillant-ebus_vehicle
   {{- if .title }}

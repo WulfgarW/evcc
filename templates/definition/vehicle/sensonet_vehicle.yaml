@@ -23,7 +23,6 @@ params:
   - name: icon
     default: heater
     advanced: true
-  - preset: vehicle-identify
 render: |
   type: sensonet_vehicle
   {{- if .title }}

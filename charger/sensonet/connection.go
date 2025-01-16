@@ -1,12 +1,16 @@
 package sensonet
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
-	"net/http/cookiejar"
+
+	//"net/http/cookiejar"
 	"os"
 	"time"
+
+	"golang.org/x/oauth2"
 
 	"github.com/ernesto-jimenez/httplogger"
 	"github.com/spf13/jwalterweatherman"
@@ -20,12 +24,12 @@ import (
 
 // Connection is the Sensonet connection
 type Connection struct {
-	*request.Helper
+	client        *http.Client
 	log           *util.Logger
 	user          string
 	password      string
 	realm         string
-	sensonetConn  *sensonetlib.Connection
+	sensonetCtrl  *sensonetlib.Controller
 	systemId      string
 	pvUseStrategy string
 	heatingZone   int
@@ -86,13 +90,14 @@ func NewConnection(user, password, realm, pvUseStrategy string, heatingZone, pha
 		return sensoNetConn, nil
 	} else {
 		utillog := util.NewLogger("sensonet")
-		client := request.NewHelper(utillog)
-		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		client := request.NewClient(utillog)
+		ctxClient := request.NewClient(utillog)
+		/*client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
-		}
+		}*/
 
 		conn := &Connection{
-			Helper: client,
+			client: client,
 		}
 		conn.user = user
 		conn.password = password
@@ -105,31 +110,40 @@ func NewConnection(user, password, realm, pvUseStrategy string, heatingZone, pha
 		conn.log = utillog
 
 		var err error
-		conn.Client.Jar, err = cookiejar.New(nil)
+		/*conn.client.Jar, err = cookiejar.New(nil)
 		if err != nil {
 			err = fmt.Errorf("could not reset cookie jar. error: %s", err)
 			return conn, err
-		}
+		}*/
 
-		var credentials sensonetlib.CredentialsStruct
-		credentials.User = user
-		credentials.Password = password
+		ctx := context.WithValue(context.TODO(), oauth2.HTTPClient, ctxClient)
+		clientCtx := context.WithValue(ctx, oauth2.HTTPClient, ctxClient)
+		oc := sensonetlib.Oauth2ConfigForRealm(conn.realm)
+		token, err := oc.PasswordCredentialsToken(clientCtx, conn.user, conn.password)
+		if err != nil {
+			utillog.FATAL.Println(err)
+		}
+		utillog.DEBUG.Println("In connection.NewConnection: Call of sensonetlib.oc.PasswordCredentialsToken() successful")
+		utillog.DEBUG.Println("Got new Token. Vaild until: ", token.Expiry)
 		//Activate httplogger and logging in sensonetlib for log levels TRACE or DEBUG
 		if util.WWlogLevelForArea("sensonet") == jwalterweatherman.LevelTrace || util.WWlogLevelForArea("sensonet") == jwalterweatherman.LevelDebug {
 			log.SetOutput(os.Stderr) //changing output of stadard log to os.stderr. (In main.go, it is set to io.Discard)
 			log := log.New(os.Stderr, "sensonet: ", log.Lshortfile)
 			client.Transport = httplogger.NewLoggedTransport(http.DefaultTransport, newLogger(log))
 		}
-		//client.Transport = http.DefaultTransport //comment this line out, if you wish logging of the http requests in sensonetlib
-		snconn, newtoken, err := sensonetlib.NewConnection(client.Client, &credentials, nil)
+		snconn, err := sensonetlib.NewConnection(oc.TokenSource(clientCtx, token), sensonetlib.WithHttpClient(client))
 		if err != nil {
-			err = fmt.Errorf("could not get Homes[] information. error: %s", err)
+			err = fmt.Errorf("sensonetlib.NewConnection(). error: %s", err)
+			return conn, err
+		}
+		snctrl, err := sensonetlib.NewController(snconn, sensonetlib.WithLogger(utillog.DEBUG))
+		if err != nil {
+			err = fmt.Errorf("sensonet.NewController(). error: %s", err)
 			return conn, err
 		}
 		utillog.DEBUG.Println("In connection.NewConnection: Call of sensonetlib.NewConnection() successful")
-		utillog.DEBUG.Println("Got new Token. Vaild until: ", newtoken.Expiry)
-		conn.sensonetConn = snconn
-		homes, err := conn.sensonetConn.GetHomes()
+		conn.sensonetCtrl = snctrl
+		homes, err := conn.sensonetCtrl.GetHomes()
 		if err != nil {
 			err = fmt.Errorf("could not get Homes[] information. error: %s", err)
 			return conn, err
@@ -156,7 +170,7 @@ func (d *Connection) Phases() int {
 }
 
 func (d *Connection) CurrentQuickmode() string {
-	return d.sensonetConn.GetCurrentQuickMode()
+	return d.sensonetCtrl.GetCurrentQuickMode()
 }
 
 func (d *Connection) QuickVetoExpiresAt() string {
@@ -165,7 +179,7 @@ func (d *Connection) QuickVetoExpiresAt() string {
 
 // CurrentTemp is called bei Soc
 func (d *Connection) CurrentTemp() (float64, error) {
-	state, err := d.sensonetConn.GetSystem(d.systemId)
+	state, err := d.sensonetCtrl.GetSystem(d.systemId)
 	if err != nil {
 		d.log.ERROR.Println("connection.CurrentTemp. Error: ", err)
 		return 0, err
@@ -188,7 +202,7 @@ func (d *Connection) CurrentTemp() (float64, error) {
 
 // TargetTemp is called bei TargetSoc
 func (d *Connection) TargetTemp() (float64, error) {
-	state, err := d.sensonetConn.GetSystem(d.systemId)
+	state, err := d.sensonetCtrl.GetSystem(d.systemId)
 	if err != nil {
 		d.log.ERROR.Println("connection.TargetTemp. Error: ", err)
 		return 0, err
