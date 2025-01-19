@@ -5,7 +5,7 @@ interval: 30s # Dieser Wert hat sich bisher als gut erwiesen
 
 meters:
 - type: template
-  template: shelly-3em # Shelly 3EM als Charge-Meter. Falls kein Shelly 3EM vorhanden, dann diesen Abschnitt streichen
+  template: shelly-3em # Shelly 3EM als Charge-Meter. Falls kein Shelly 3EM vorhanden, dann diesen Abschnitt streichen. Für neuere aroTHERM-Modelle kann der sensonet-Charger die aktuelle Leistungsaufnahme über das myVaillant-Portal auslesen
   #usage: charge
   host: xxx.xxx.xxx.xxx # Hier die IP der Shelly 3EM angeben
   name: heatpumppwr #Kann frei gewählt werden
@@ -15,7 +15,7 @@ chargers:
   template: sensonet 
   user: xxx # Benutzername bei myVaillant
   password: yyy # Passwort bei myVaillant
-  realm: vaillant-germany-b2c # Für Vaillant-Wärmepumpen in Deutschland muss hier 'vaillant-germany-b2c' stehen
+  #realm: vaillant-germany-b2c # Für Vaillant-Wärmepumpen muss hier der richtige Wert übergeben werden. Für Wärmepumpen in Deutschland, ist die Parameterübergabe nicht notwendig, weil der Charger mit vaillant-germany-b2c als Defaultwert arbeitet.
   heatingzone: 1 # Hier die Heizzone angeben, für die Quick-Vetos gestartet werden sollen. Default ist 0
   heatingtemperatureoffset: 2 # Hier angeben, wieviel Grad der Setpoint des Quick-Vetos über dem Temperature-Sollwert der Zone im Normalbetrieb liegen soll. Default ist 2
   pvusestrategy: hotwater_then_heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 

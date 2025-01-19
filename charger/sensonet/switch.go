@@ -46,7 +46,7 @@ func (sh *Switch) Enable(enable bool) error {
 	d := sh.Connection
 	state, err := d.sensonetCtrl.GetSystem(d.systemId)
 	if err != nil {
-		d.log.ERROR.Println("connection.TargetTemp. Error: ", err)
+		d.log.ERROR.Println("connection.Enable. Error: ", err)
 		return err
 	}
 	zoneData := sensonetlib.GetZoneData(state, d.heatingZone)

@@ -6,7 +6,7 @@ interval: 30s # Dieser Wert hat sich bisher als gut erwiesen
 
 #meters: 
 #- type: template
-#  template: shelly-3em # Falls Shelly 3EM als Charge-Meter für die Wärmepumpe vorhanden. das vaillant-ebus-Charger-Modul fragt sonst die Leistungsaufnahme via ebus ab
+#  template: shelly-3em # Falls Shelly 3EM als Charge-Meter für die Wärmepumpe vorhanden. Das vaillant-ebus-Charger-Modul fragt sonst die Leistungsaufnahme via ebus ab
 #  #usage: charge
 #  host: xxx.xxx.xxx.xxx # Hier die IP der Shelly 3EM angeben
 #  name: heatpumppwr #Kann frei gewählt werden
@@ -31,7 +31,6 @@ vehicles:
   icon: heater
   pvusestrategy: hotwater_then_heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
   phases: 3
-  mode: off
 # Man kann mehrere vaillant-ebus_vehicles in der yaml-Datei mit unterschiedlichen pvUseStrategy-Werten definieren und dann bei laufendem evcc-Programm durch Wechsel des "Fahrzeugs" die pvUseStrategy wechseln
 # Falls das nicht benötigt wird, kann man sich auf eine vehicle-Definition beschränken
 - type: template
@@ -41,7 +40,6 @@ vehicles:
   icon: heater
   pvusestrategy: hotwater #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
   phases: 3
-  mode: off  
 - type: template
   template: vaillant-ebus_vehicle 
   title: VaillantHeating  # Kann frei gewählt werden
@@ -49,7 +47,6 @@ vehicles:
   icon: heater
   pvusestrategy: heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
   phases: 3
-  mode: off  
 
 
 loadpoints:
