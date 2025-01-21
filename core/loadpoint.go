@@ -1939,4 +1939,24 @@ func (lp *Loadpoint) Update(sitePower, batteryBoostPower float64, rates api.Rate
 			}
 		}
 	}
+	//fmt.Println(lp.charger.(*charger.VaillantViaEbus, m))
+	if c, ok := lp.charger.(*struct {
+		*charger.VaillantViaEbus
+		api.Battery
+		api.Meter
+		api.SocLimiter
+	}); ok {
+		if lp.socEstimator != nil {
+			soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
+			if err == nil {
+				lp.publish(keys.VehicleSoc, soc)
+			}
+		}
+		if limit, err := c.GetLimitSoc(); err == nil {
+			lp.log.DEBUG.Printf("integrated vehicle soc limit: %d%%", limit)
+			lp.publish(keys.VehicleLimitSoc, limit)
+		} else {
+			lp.log.ERROR.Printf("integrated vehicle soc limit: %v", err)
+		}
+	}
 }

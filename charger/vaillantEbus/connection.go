@@ -131,14 +131,14 @@ func (d *Connection) Phases() int {
 	return d.phases
 }
 
-func (d *Connection) CurrentQuickmode() string {
+func (d *Connection) currentQuickmode() string {
 	return d.ebusdConn.GetCurrentQuickMode()
 }
 
 func (d *Connection) QuickVetoExpiresAt() string {
 	//return d.ebusdConn.GetQuickVetoExpiresAt()
 	state, err := d.ebusdConn.GetSystem(false)
-	if err == nil && d.CurrentQuickmode() == sensonetEbus.QUICKMODE_HEATING {
+	if err == nil && d.currentQuickmode() == sensonetEbus.QUICKMODE_HEATING {
 		for _, z := range state.Zones {
 			if z.Index == d.heatingZone {
 				return z.QuickVetoEndTime
@@ -156,7 +156,12 @@ func (d *Connection) CurrentTemp() (float64, error) {
 		d.log.ERROR.Println("Connection.CurrentTemp. Error: ", err)
 		return 0, err
 	}
-	if d.CurrentQuickmode() == sensonetEbus.QUICKMODE_HEATING {
+	hotWaterOn := false
+	if state.Hotwater.HwcOpMode == sensonetEbus.OPERATIONMODE_AUTO {
+		hotWaterOn = true
+	}
+
+	if d.currentQuickmode() == sensonetEbus.QUICKMODE_HEATING || !hotWaterOn {
 		currentTemp := 5.0
 		for _, z := range state.Zones {
 			if currentTemp == 5.0 && z.RoomTemp > currentTemp {
@@ -178,15 +183,22 @@ func (d *Connection) TargetTemp() (float64, error) {
 		d.log.ERROR.Println("Switch.TargetTemp. Error: ", err)
 		return 0, err
 	}
-	if d.CurrentQuickmode() == sensonetEbus.QUICKMODE_HEATING {
-		for _, z := range state.Zones {
-			if z.Index == d.heatingZone {
-				//return z.ActualRoomTempDesired, nil
-				return z.QuickVetoTemp, nil
-			}
+	hotWaterOn := false
+	if state.Hotwater.HwcOpMode == sensonetEbus.OPERATIONMODE_AUTO {
+		hotWaterOn = true
+	}
+
+	if d.currentQuickmode() == sensonetEbus.QUICKMODE_HEATING {
+		z := sensonetEbus.GetZoneData(state.Zones, d.heatingZone)
+		if z.QuickVetoTemp > 0 {
+			return z.QuickVetoTemp, nil
+		} else {
+			return float64(d.quickVetoSetPoint), nil
 		}
-		//return float64(d.ebusdConn.GetQuickVetoSetPoint()), nil
-		return float64(d.quickVetoSetPoint), nil
+	}
+	if !hotWaterOn {
+		z := sensonetEbus.GetZoneData(state.Zones, d.heatingZone)
+		return z.ActualRoomTempDesired, nil
 	}
 	return state.Hotwater.HwcTempDesired, nil
 }
@@ -207,8 +219,38 @@ func (d *Connection) Status() (api.ChargeStatus, error) {
 		//It is not expected, that the last update of the get system value is longer ago than 4 minutes
 		status = api.StatusA // disconnected
 	}
-	if d.CurrentQuickmode() != "" {
+	if d.currentQuickmode() != "" {
 		status = api.StatusC
 	}
 	return status, nil
+}
+
+func (d *Connection) ModeText() string {
+	state, err := d.ebusdConn.GetSystem(false)
+	if err != nil {
+		d.log.ERROR.Println("connection.TargetTemp. Error: ", err)
+		return ""
+	}
+	hotWaterOn := false
+	if state.Hotwater.HwcOpMode == sensonetEbus.OPERATIONMODE_AUTO {
+		hotWaterOn = true
+	}
+
+	tempInfo := "hotwater temp. shown)"
+	if d.currentQuickmode() == sensonetEbus.QUICKMODE_HEATING || !hotWaterOn {
+		tempInfo = "heating temp. shown)"
+	}
+
+	switch d.currentQuickmode() {
+	case sensonetEbus.QUICKMODE_HOTWATER:
+		return " (Hotwater Boost active)"
+	case sensonetEbus.QUICKMODE_HEATING:
+		if d.quickVetoExpiresAt != "" {
+			return " (Heating Quick Veto active. Ends " + d.quickVetoExpiresAt + ")"
+		}
+		return " (Heating Quick Veto active)"
+	case sensonetEbus.QUICKMODE_NOTHING:
+		return " (charger running idle; " + tempInfo
+	}
+	return " (regular mode; " + tempInfo
 }

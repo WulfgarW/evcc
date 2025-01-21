@@ -184,7 +184,7 @@ func (sh *Switch) CurrentPower() (float64, error) {
 		power = 0.0
 		//err = d.getSFMode(&d.relData) //Update SFMode for hotwater and heating zone
 	}
-	d.log.DEBUG.Println("Switch.CurrentPower", d.CurrentQuickmode(), "Power:", power)
+	d.log.DEBUG.Println("Switch.CurrentPower", d.currentQuickmode(), "Power:", power)
 	return power * 1000, nil
 }
 

@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 
-	//"net/http/cookiejar"
 	"os"
 	"time"
 
@@ -169,12 +168,8 @@ func (d *Connection) Phases() int {
 	return d.phases
 }
 
-func (d *Connection) CurrentQuickmode() string {
+func (d *Connection) currentQuickmode() string {
 	return d.sensonetCtrl.GetCurrentQuickMode()
-}
-
-func (d *Connection) QuickVetoExpiresAt() string {
-	return d.quickVetoExpiresAt
 }
 
 // CurrentTemp is called bei Soc
@@ -184,7 +179,26 @@ func (d *Connection) CurrentTemp() (float64, error) {
 		d.log.ERROR.Println("connection.CurrentTemp. Error: ", err)
 		return 0, err
 	}
-	if d.CurrentQuickmode() == sensonetlib.QUICKMODE_HEATING {
+	hotWaterOn := false
+	hotWaterCurrentTemp := 0.0
+	if len(state.State.Dhw) > 0 {
+		// Extracting correct State.Dhw element
+		dhwData := sensonetlib.GetDhwData(state, -1)
+		if dhwData.Configuration.OperationModeDhw == sensonetlib.OPERATIONMODE_TIME_CONTROLLED {
+			hotWaterOn = true
+			hotWaterCurrentTemp = dhwData.State.CurrentDhwTemperature
+		}
+	}
+	if len(state.State.DomesticHotWater) > 0 {
+		// Extracting correct State.Dhw element
+		domesticHotWaterData := sensonetlib.GetDomesticHotWaterData(state, -1)
+		if domesticHotWaterData.Configuration.OperationModeDomesticHotWater == sensonetlib.OPERATIONMODE_TIME_CONTROLLED {
+			hotWaterOn = true
+			hotWaterCurrentTemp = domesticHotWaterData.State.CurrentDomesticHotWaterTemperature
+		}
+	}
+
+	if d.currentQuickmode() == sensonetlib.QUICKMODE_HEATING || !hotWaterOn {
 		zoneData := sensonetlib.GetZoneData(state, d.heatingZone)
 		currentTemp := 5.0
 		if zoneData.State.CurrentRoomTemperature > currentTemp {
@@ -195,8 +209,7 @@ func (d *Connection) CurrentTemp() (float64, error) {
 		}
 		return currentTemp, nil
 	} else {
-		dhwData := sensonetlib.GetDhwData(state, -1)
-		return float64(dhwData.State.CurrentDhwTemperature), nil
+		return hotWaterCurrentTemp, nil
 	}
 }
 
@@ -207,7 +220,26 @@ func (d *Connection) TargetTemp() (float64, error) {
 		d.log.ERROR.Println("connection.TargetTemp. Error: ", err)
 		return 0, err
 	}
-	if d.CurrentQuickmode() == sensonetlib.QUICKMODE_HEATING {
+	hotWaterOn := false
+	hotWaterSetpoint := 0.0
+	if len(state.State.Dhw) > 0 {
+		// Extracting correct State.Dhw element
+		dhwData := sensonetlib.GetDhwData(state, -1)
+		if dhwData.Configuration.OperationModeDhw == sensonetlib.OPERATIONMODE_TIME_CONTROLLED {
+			hotWaterOn = true
+			hotWaterSetpoint = dhwData.Configuration.TappingSetpoint
+		}
+	}
+	if len(state.State.DomesticHotWater) > 0 {
+		// Extracting correct State.Dhw element
+		domesticHotWaterData := sensonetlib.GetDomesticHotWaterData(state, -1)
+		if domesticHotWaterData.Configuration.OperationModeDomesticHotWater == sensonetlib.OPERATIONMODE_TIME_CONTROLLED {
+			hotWaterOn = true
+			hotWaterSetpoint = domesticHotWaterData.Configuration.TappingSetpoint
+		}
+	}
+
+	if d.currentQuickmode() == sensonetlib.QUICKMODE_HEATING || !hotWaterOn {
 		zoneData := sensonetlib.GetZoneData(state, d.heatingZone)
 		if zoneData != nil {
 			if zoneData.State.CurrentSpecialFunction == "QUICK_VETO" {
@@ -217,9 +249,12 @@ func (d *Connection) TargetTemp() (float64, error) {
 			}
 		}
 		return float64(d.quickVetoSetPoint), nil
+	}
+	if !hotWaterOn {
+		zoneData := sensonetlib.GetZoneData(state, d.heatingZone)
+		return zoneData.State.DesiredRoomTemperatureSetpoint, nil
 	} else {
-		dhwData := sensonetlib.GetDhwData(state, -1)
-		return float64(dhwData.Configuration.TappingSetpoint), nil
+		return hotWaterSetpoint, nil
 	}
 }
 
@@ -237,8 +272,49 @@ func (d *Connection) Status() (api.ChargeStatus, error) {
 	/*if time.Now().After(d.tokenExpiresAt) {
 		status = api.StatusA // disconnected
 	}*/
-	if d.CurrentQuickmode() != "" {
+	if d.currentQuickmode() != "" {
 		status = api.StatusC
 	}
 	return status, nil
+}
+
+func (d *Connection) ModeText() string {
+	state, err := d.sensonetCtrl.GetSystem(d.systemId)
+	if err != nil {
+		d.log.ERROR.Println("connection.TargetTemp. Error: ", err)
+		return ""
+	}
+	hotWaterOn := false
+	if len(state.State.Dhw) > 0 {
+		// Extracting correct State.Dhw element
+		dhwData := sensonetlib.GetDhwData(state, -1)
+		if dhwData.Configuration.OperationModeDhw == sensonetlib.OPERATIONMODE_TIME_CONTROLLED {
+			hotWaterOn = true
+		}
+	}
+	if len(state.State.DomesticHotWater) > 0 {
+		// Extracting correct State.Dhw element
+		domesticHotWaterData := sensonetlib.GetDomesticHotWaterData(state, -1)
+		if domesticHotWaterData.Configuration.OperationModeDomesticHotWater == sensonetlib.OPERATIONMODE_TIME_CONTROLLED {
+			hotWaterOn = true
+		}
+	}
+
+	tempInfo := "hotwater temp. shown)"
+	if d.currentQuickmode() == sensonetlib.QUICKMODE_HEATING || !hotWaterOn {
+		tempInfo = "heating temp. shown)"
+	}
+
+	switch d.currentQuickmode() {
+	case sensonetlib.QUICKMODE_HOTWATER:
+		return " (Hotwater Boost active)"
+	case sensonetlib.QUICKMODE_HEATING:
+		if d.quickVetoExpiresAt != "" {
+			return " (Heating Quick Veto active. Ends " + d.quickVetoExpiresAt + ")"
+		}
+		return " (Heating Quick Veto active)"
+	case sensonetlib.QUICKMODE_NOTHING:
+		return " (charger running idle; " + tempInfo
+	}
+	return " (regular mode; " + tempInfo
 }
