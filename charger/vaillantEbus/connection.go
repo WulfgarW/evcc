@@ -23,7 +23,7 @@ type Connection struct {
 	heatingTemperatureOffset float64
 	onoff                    bool
 	quickVetoSetPoint        float32
-	quickVetoExpiresAt       string
+	//quickVetoExpiresAt       string
 }
 
 // Global variable SensoNetConn is used to make data available in vehicle vks (not needed without vehicle vks)
@@ -36,7 +36,7 @@ func NewConnection(ebusdAddress, pvUseStrategy string, heatingZone, phases int, 
 		vaillantEbusConn.log.DEBUG.Println("In connection.NewConnection: vaillantEbusConn already initialised")
 		return vaillantEbusConn, nil
 	} else {
-		log := util.NewLogger("vaillantEbus")
+		log := util.NewLogger("vaillantEbus").Redact(ebusdAddress)
 		client := request.NewHelper(log)
 		conn := &Connection{
 			Helper: client,
@@ -52,7 +52,7 @@ func NewConnection(ebusdAddress, pvUseStrategy string, heatingZone, phases int, 
 
 		var err error
 
-		ebusdConn, err := sensonetEbus.NewConnection(ebusdAddress, sensonetEbus.WithLogger(log.DEBUG))
+		ebusdConn, err := sensonetEbus.NewConnection(ebusdAddress, sensonetEbus.WithLogger(log.TRACE))
 		if err != nil {
 			err = fmt.Errorf("sensonetEbuslib.NewConnection(). error: %s", err)
 			return conn, err
@@ -136,17 +136,7 @@ func (d *Connection) currentQuickmode() string {
 }
 
 func (d *Connection) QuickVetoExpiresAt() string {
-	//return d.ebusdConn.GetQuickVetoExpiresAt()
-	state, err := d.ebusdConn.GetSystem(false)
-	if err == nil && d.currentQuickmode() == sensonetEbus.QUICKMODE_HEATING {
-		for _, z := range state.Zones {
-			if z.Index == d.heatingZone {
-				return z.QuickVetoEndTime
-			}
-		}
-	}
-	return d.quickVetoExpiresAt
-
+	return d.ebusdConn.GetQuickModeExpiresAt()
 }
 
 // CurrentTemp is called bei Soc
@@ -177,7 +167,7 @@ func (d *Connection) CurrentTemp() (float64, error) {
 }
 
 // TargetTemp is called bei TargetSoc
-func (d *Connection) TargetTemp() (float64, error) {
+func (d *Connection) TargetTemp() (int64, error) {
 	state, err := d.ebusdConn.GetSystem(false)
 	if err != nil {
 		d.log.ERROR.Println("Switch.TargetTemp. Error: ", err)
@@ -191,16 +181,16 @@ func (d *Connection) TargetTemp() (float64, error) {
 	if d.currentQuickmode() == sensonetEbus.QUICKMODE_HEATING {
 		z := sensonetEbus.GetZoneData(state.Zones, d.heatingZone)
 		if z.QuickVetoTemp > 0 {
-			return z.QuickVetoTemp, nil
+			return int64(z.QuickVetoTemp), nil
 		} else {
-			return float64(d.quickVetoSetPoint), nil
+			return int64(d.quickVetoSetPoint), nil
 		}
 	}
 	if !hotWaterOn {
 		z := sensonetEbus.GetZoneData(state.Zones, d.heatingZone)
-		return z.ActualRoomTempDesired, nil
+		return int64(z.ActualRoomTempDesired), nil
 	}
-	return state.Hotwater.HwcTempDesired, nil
+	return int64(state.Hotwater.HwcTempDesired), nil
 }
 
 // CheckPVUseStrategy is called bei vaillant-ebus_vehicle.Soc()
@@ -245,11 +235,14 @@ func (d *Connection) ModeText() string {
 	case sensonetEbus.QUICKMODE_HOTWATER:
 		return " (Hotwater Boost active)"
 	case sensonetEbus.QUICKMODE_HEATING:
-		if d.quickVetoExpiresAt != "" {
-			return " (Heating Quick Veto active. Ends " + d.quickVetoExpiresAt + ")"
+		if d.ebusdConn.GetQuickModeExpiresAt() != "" {
+			return " (Heating Quick Veto active. Ends " + d.ebusdConn.GetQuickModeExpiresAt() + ")"
 		}
 		return " (Heating Quick Veto active)"
 	case sensonetEbus.QUICKMODE_NOTHING:
+		if d.ebusdConn.GetQuickModeExpiresAt() != "" {
+			return " (charger running idle. Ends " + d.ebusdConn.GetQuickModeExpiresAt() + "; " + tempInfo
+		}
 		return " (charger running idle; " + tempInfo
 	}
 	return " (regular mode; " + tempInfo

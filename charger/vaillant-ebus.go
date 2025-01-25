@@ -97,3 +97,15 @@ func (c *VaillantEbus) Status() (api.ChargeStatus, error) {
 func (c *VaillantEbus) ModeText() string {
 	return c.conn.ModeText()
 }
+
+func (c *VaillantEbus) Soc() (float64, error) {
+	return c.conn.CurrentTemp()
+}
+
+func (c *VaillantEbus) CurrentPower() (float64, error) {
+	return c.conn.CurrentPower()
+}
+
+func (c *VaillantEbus) GetLimitSoc() (int64, error) {
+	return c.conn.TargetTemp()
+}

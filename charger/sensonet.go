@@ -1,8 +1,6 @@
 package charger
 
 import (
-	"fmt"
-
 	"github.com/evcc-io/evcc/api"
 	"github.com/evcc-io/evcc/charger/sensonet"
 	"github.com/evcc-io/evcc/util"
@@ -66,21 +64,7 @@ func (c *Sensonet) Enabled() (bool, error) {
 
 // Enable implements the api.Charger interface
 func (c *Sensonet) Enable(enable bool) error {
-	err := c.conn.Enable(enable)
-	if err != nil {
-		return err
-	}
-
-	enabled, err := c.Enabled()
-	switch {
-	case err != nil:
-		return err
-	case enable != enabled:
-		onoff := map[bool]string{true: "on", false: "off"}
-		return fmt.Errorf("switch %s failed", onoff[enable])
-	default:
-		return nil
-	}
+	return c.conn.Enable(enable)
 }
 
 func (c *Sensonet) Phases() int {
@@ -98,4 +82,16 @@ func (c *Sensonet) Status() (api.ChargeStatus, error) {
 
 func (c *Sensonet) ModeText() string {
 	return c.conn.ModeText()
+}
+
+func (c *Sensonet) Soc() (float64, error) {
+	return c.conn.CurrentTemp()
+}
+
+func (c *Sensonet) CurrentPower() (float64, error) {
+	return c.conn.CurrentPower()
+}
+
+func (c *Sensonet) GetLimitSoc() (int64, error) {
+	return c.conn.TargetTemp()
 }

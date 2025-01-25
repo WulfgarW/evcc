@@ -1,22 +1,17 @@
 template: sensonet_vehicle
 products:
-  - brand: Vaillant Sensonet
+  - brand: Vaillant
+    description:
+      generic: vehicle for sensonet charger
 requirements:
   description:
     de: |
-      Dies ist ein Fahrzeug-Template für sensonet von Vaillant.
-
-      Dies funktioniert nur in Verbindung mit dem charger-Template sensonet
+      Dies Fahrzeug-Template funktioniert nur in Verbindung mit dem charger-Template sensonet
     en: |
-      This is a vehicle template for Vaillant's sensonet.
-
-      It only works in combination with the charger template sensonet
+      This vehicle template only works in combination with the charger template sensonet
 params:
   - name: title
     required: true
-  - name: capacity
-  - name: phases
-    advanced: true
   - name: pvusestrategy
     choice: ['hotwater','heating','hotwater_then_heating','not_set']
     default: 'not_set'
@@ -33,8 +28,4 @@ render: |
   {{- end }}
   {{- if .pvusestrategy }}
   pvusestrategy: {{ .pvusestrategy }}
-  {{- end }}
-  capacity: {{ .capacity }}
-  {{- if .phases }}
-  phases: {{ .phases }}
   {{- end }}

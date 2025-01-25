@@ -30,10 +30,13 @@ func NewVaillantEbusVehicleFromConfig(other map[string]interface{}) (api.Vehicle
 		return nil, err
 	}
 
+	log := util.NewLogger("vaillant-ebus_vehicle")
+
 	//Get pointer to the connection struct of the charger vaillant-ebus
 	conn, err := vaillantEbus.GetVaillantEbusConn()
 	if err != nil {
-		return nil, err
+		log.ERROR.Println(err)
+		log.ERROR.Println("You can not use the vaillant-ebus_vehicle without a vaillant-ebus charger. You can ignore this message, if you are in evcc configure")
 	}
 
 	v := &VaillantEbus_vehicle{
@@ -59,6 +62,9 @@ func NewVaillantEbusVehicleFromConfig(other map[string]interface{}) (api.Vehicle
 
 // Soc implements the api.Vehicle interface
 func (v *VaillantEbus_vehicle) Soc() (float64, error) {
+	if _, err := vaillantEbus.GetVaillantEbusConn(); err != nil {
+		return 0, err
+	}
 	tt, err := v.conn.CurrentTemp()
 	if err != nil {
 		return 0, err
@@ -71,6 +77,9 @@ func (v *VaillantEbus_vehicle) Soc() (float64, error) {
 
 // Status implements the api.ChargeState interface
 func (v *VaillantEbus_vehicle) Status() (api.ChargeStatus, error) {
+	if _, err := vaillantEbus.GetVaillantEbusConn(); err != nil {
+		return api.StatusA, err
+	}
 	status, err := v.conn.Status()
 	if err != nil {
 		return api.StatusA, err
@@ -82,44 +91,12 @@ var _ api.SocLimiter = (*VaillantEbus_vehicle)(nil)
 
 // TargetSoc implements the api.SocLimiter interface
 func (v *VaillantEbus_vehicle) GetLimitSoc() (int64, error) {
+	if _, err := vaillantEbus.GetVaillantEbusConn(); err != nil {
+		return 0, err
+	}
 	tt, err := v.conn.TargetTemp()
 	if err != nil {
 		return 0, err
 	}
-	return int64(tt), err
+	return tt, err
 }
-
-// StartCharge implements the api.VehicleChargeController interface
-/*var _ api.Resurrector = (*VaillantEbus_vehicle)(nil)
-
-func (v *VaillantEbus_vehicle) WakeUp() error {
-	//_, err := v.vehicle.Wakeup()
-	err := error(nil)
-	//return apiError(err)
-	return err
-}
-
-/*
-var _ api.VehicleChargeController = (*VaillantEbus_vehicle)(nil)
-
-// StartCharge implements the api.VehicleChargeController interface
-func (v *VaillantEbus_vehicle) StartCharge() error {
-	//_, err := v.vehicle.StartCharging()
-	v.SetTitle("VaillantEbus_vehicle starting load process")
-	err := error(nil)
-	return v.apiError(err)
-}
-
-// StopCharge implements the api.VehicleChargeController interface
-func (v *VaillantEbus_vehicle) StopCharge() error {
-	//err := v.apiError(v.vehicle.StopCharging())
-	v.SetTitle("VaillantEbus_vehicle stopping load process")
-	err := error(nil)
-
-	// ignore sleeping vehicle
-	if errors.Is(err, api.ErrAsleep) {
-		err = nil
-	}
-
-	return err
-}*/

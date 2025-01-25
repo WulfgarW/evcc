@@ -1,22 +1,17 @@
 template: vaillant-ebus_vehicle
 products:
-  - brand: Vaillant via Ebus
+  - brand: Vaillant
+    description:
+      generic: vehicle for vaillant-ebus charger
 requirements:
   description:
     de: |
-      Dies ist ein Fahrzeug-Template für vaillant-ebus.
-
-      Dies funktioniert nur in Verbindung mit dem charger-Template vaillant-ebus
+      Dies Fahrzeug-Template funktioniert nur in Verbindung mit dem charger-Template vaillant-ebus
     en: |
-      This is a vehicle template for vaillant-ebus.
-
-      It only works in combination with the charger template vaillant-ebus
+      This vehicle template only works in combination with the charger template vaillant-ebus
 params:
   - name: title
     required: true
-  - name: capacity
-  - name: phases
-    advanced: true
   - name: pvusestrategy
     choice: ['hotwater','heating','hotwater_then_heating','not_set']
     default: 'not_set'
@@ -33,8 +28,4 @@ render: |
   {{- end }}
   {{- if .pvusestrategy }}
   pvusestrategy: {{ .pvusestrategy }}
-  {{- end }}
-  capacity: {{ .capacity }}
-  {{- if .phases }}
-  phases: {{ .phases }}
   {{- end }}

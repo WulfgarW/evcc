@@ -2,7 +2,7 @@ log: debug # Für die Testphase sollte 'debug' aktiviert sein
 levels:
   cache: error
 
-interval: 30s # Dieser Wert hat sich bisher als gut erwiesen
+interval: 60s # Dieser Wert hat sich bisher als gut erwiesen
 
 #meters: 
 #- type: template
@@ -20,45 +20,34 @@ chargers:
   pvusestrategy: hotwater_then_heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
   icon: heater
   heating: true 
-  #integrateddevice: true
+  integrateddevice: true # Wenn man im laufenden evcc-Betrieb zwischen verschiedenen PV-Use-Strategien umschalten will, so ist dieser Parameter auszukommentieren
   name: vaillant #Kann frei gewählt werden
 
-vehicles:
-- type: template
-  template: vaillant-ebus_vehicle 
-  title: Vaillant  # Kann frei gewählt werden
-  name: aroTHERM # Kann frei gewählt werden
-  icon: heater
-  pvusestrategy: hotwater_then_heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
-  phases: 3
-# Man kann mehrere vaillant-ebus_vehicles in der yaml-Datei mit unterschiedlichen pvUseStrategy-Werten definieren und dann bei laufendem evcc-Programm durch Wechsel des "Fahrzeugs" die pvUseStrategy wechseln
-# Falls das nicht benötigt wird, kann man sich auf eine vehicle-Definition beschränken
-- type: template
-  template: vaillant-ebus_vehicle 
-  title: VaillantHotwater  # Kann frei gewählt werden
-  name: aroTHERMHotwater # Kann frei gewählt werden
-  icon: heater
-  pvusestrategy: hotwater #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
-  phases: 3
-- type: template
-  template: vaillant-ebus_vehicle 
-  title: VaillantHeating  # Kann frei gewählt werden
-  name: aroTHERMHeating # Kann frei gewählt werden
-  icon: heater
-  pvusestrategy: heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
-  phases: 3
+#vehicles: #Die folgenden, auskommentierten Vehicle-Definitionen sind nur zu aktivieren, wenn man im laufenden evcc-Betrieb durch Wechsel des "Fahrzeugs" zwischen verschiedenen PV-Use-Strategien umschalten will
+#- type: template
+#  template: vaillant-ebus_vehicle 
+#  title: Vaillant  # Kann frei gewählt werden
+#  name: aroTHERM # Kann frei gewählt werden
+#  icon: heater
+#  pvusestrategy: hotwater_then_heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
+#- type: template
+#  template: vaillant-ebus_vehicle 
+#  title: VaillantHeating  # Kann frei gewählt werden
+#  name: aroTHERMHeating # Kann frei gewählt werden
+#  icon: heater
+#  pvusestrategy: heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
 
 
 loadpoints:
 - title: Wärmepumpe # Kann frei gewählt werden
   charger: vaillant # Entsprechend dem im Abschnitt 'chargers' gewählten Namen
   #meter: heatpumppwr # Entsprechend dem im Abschnitt 'meters' gewählten Namen. Sonst diese Zeile streichen
-  vehicle: aroTHERM # Entsprechend dem im Abschnitt 'vehicles' gewählten Namen
+#  vehicle: aroTHERM # Entsprechend dem im Abschnitt 'vehicles' gewählten Namen (Ist nur erforderlich, wenn beim sensonet-Charger 'integrateddevice: true' auskommentiert wurde)
   mode: off # Zur Sicherheit beim Start von evcc auf 'off'. Kann aber auch auf 'pv' gesetzt werden
   enable:
       threshold: -2500
       delay: 1m
   disable:
       threshold: -2100
-      delay: 3m # Laufzeit mindestens 3 Minuten
+      delay: 10m # Laufzeit mindestens 3 Minuten
   guardduration: 3m # Pause mindestens 3 Minunten

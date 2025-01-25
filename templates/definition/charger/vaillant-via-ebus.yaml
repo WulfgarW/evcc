@@ -1,8 +1,8 @@
-template: vaillant-ebus
+template: vaillant-via-ebus
 products:
-  - brand: Vaillant
+  - brand: Vaillant via Ebus (SG Ready)
     description:
-      generic: sensoNET via eBus
+      generic: sensoNET via eBus (SG Ready)
 group: heating
 requirements:
   description:
@@ -20,7 +20,6 @@ params:
       de: Steuert, welcher Sondermodus bei Start einer "Ladesession" initiiert werden soll. 
       en: Controls with special mode shall be initiated when a "load session" is started
     choice: ['hotwater','heating','hotwater_then_heating']
-    default: hotwater_then_heating
   - name: heatingzone
     type: int
     help:
@@ -34,24 +33,13 @@ params:
       en: Offset value to be added to the normal mode temperature setpoint for the heating zone giving the temperature setpoint for the zone quick veto
     default: 2
   - name: phases
-    type: int
     default: 3
-  - preset: switchsocket
+    type: int
+    advanced: true
 render: |
-  type: vaillant-ebus
-  {{- if .ebusdaddress }}
+  type: vaillant-via-ebus
   ebusdaddress: {{ .ebusdaddress }}
-  {{- end }}
-  {{- if .pvusestrategy }}
-  pvusestrategy: {{ .pvusestrategy }}
-  {{- end }}
-  {{- if .heatingzone }}
   heatingzone: {{ .heatingzone }}
-  {{- end }}
-  {{- if .heatingtemperatureoffset }}
   heatingtemperatureoffset: {{ .heatingtemperatureoffset }}
-  {{- end }}
-  {{- if .phases }}
+  pvusestrategy: {{ .pvusestrategy }}
   phases: {{ .phases }}
-  {{- end }}
-  {{ include "switchsocket" . }}

@@ -1897,54 +1897,91 @@ func (lp *Loadpoint) Update(sitePower, batteryBoostPower float64, rates api.Rate
 
 	//WW added by WW to show the current quick mode in the vehicle title and the SoC data even if no charge session active
 	if c, ok := lp.charger.(*charger.Sensonet); ok {
-		title := "Guest"
-		if lp.vehicle != nil {
-			title = lp.vehicle.Title()
-		}
-		lp.publish(keys.VehicleName, title+c.ModeText())
-		if lp.socEstimator != nil {
-			soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
-			if err == nil {
-				lp.publish(keys.VehicleSoc, soc)
+		if lp.chargerHasFeature(api.IntegratedDevice) {
+			title := lp.Title()
+			lp.publish(keys.Title, title+c.ModeText())
+			if lp.socEstimator != nil {
+				soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
+				if err == nil {
+					lp.publish(keys.VehicleSoc, soc)
+				}
 			}
-		}
-		if vs, ok := lp.GetVehicle().(api.SocLimiter); ok {
-			if limit, err := vs.GetLimitSoc(); err == nil {
-				lp.log.DEBUG.Printf("vehicle soc limit: %d%%", limit)
+			if limit, err := c.GetLimitSoc(); err == nil {
+				lp.log.DEBUG.Printf("integrated vehicle soc limit: %d%%", limit)
 				lp.publish(keys.VehicleLimitSoc, limit)
 			} else {
-				lp.log.ERROR.Printf("vehicle soc limit: %v", err)
+				lp.log.ERROR.Printf("integrated vehicle soc limit: %v", err)
+			}
+		} else {
+			title := "Guest"
+			if lp.vehicle != nil {
+				title = lp.vehicle.Title()
+			}
+			lp.publish(keys.VehicleName, title+c.ModeText())
+			if lp.socEstimator != nil {
+				soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
+				if err == nil {
+					lp.publish(keys.VehicleSoc, soc)
+				}
+			}
+			if vs, ok := lp.GetVehicle().(api.SocLimiter); ok {
+				// If lp.GetVehicle().(api.SocLimiter) returns ok, then we have a vehicle defined for the loadpoint
+				if limit, err := vs.GetLimitSoc(); err == nil {
+					lp.log.DEBUG.Printf("vehicle soc limit: %d%%", limit)
+					lp.publish(keys.VehicleLimitSoc, limit)
+				} else {
+					lp.log.ERROR.Printf("vehicle soc limit: %v", err)
+				}
 			}
 		}
 	}
 	if c, ok := lp.charger.(*charger.VaillantEbus); ok {
-		title := "Guest"
-		if lp.vehicle != nil {
-			title = lp.vehicle.Title()
-		}
-		lp.publish(keys.VehicleName, title+c.ModeText())
-		if lp.socEstimator != nil {
-			soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
-			if err == nil {
-				lp.publish(keys.VehicleSoc, soc)
+		if lp.chargerHasFeature(api.IntegratedDevice) {
+			title := lp.Title()
+			lp.publish(keys.Title, title+c.ModeText())
+			if lp.socEstimator != nil {
+				soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
+				if err == nil {
+					lp.publish(keys.VehicleSoc, soc)
+				}
 			}
-		}
-		if vs, ok := lp.GetVehicle().(api.SocLimiter); ok {
-			if limit, err := vs.GetLimitSoc(); err == nil {
-				lp.log.DEBUG.Printf("vehicle soc limit: %d%%", limit)
+			if limit, err := c.GetLimitSoc(); err == nil {
+				lp.log.DEBUG.Printf("integrated vehicle soc limit: %d%%", limit)
 				lp.publish(keys.VehicleLimitSoc, limit)
 			} else {
-				lp.log.ERROR.Printf("vehicle soc limit: %v", err)
+				lp.log.ERROR.Printf("integrated vehicle soc limit: %v", err)
+			}
+		} else {
+			title := "Guest"
+			if lp.vehicle != nil {
+				title = lp.vehicle.Title()
+			}
+			lp.publish(keys.VehicleName, title+c.ModeText())
+			if lp.socEstimator != nil {
+				soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
+				if err == nil {
+					lp.publish(keys.VehicleSoc, soc)
+				}
+			}
+			if vs, ok := lp.GetVehicle().(api.SocLimiter); ok {
+				// If lp.GetVehicle().(api.SocLimiter) returns ok, then we have a vehicle defined for the loadpoint
+				if limit, err := vs.GetLimitSoc(); err == nil {
+					lp.log.DEBUG.Printf("vehicle soc limit: %d%%", limit)
+					lp.publish(keys.VehicleLimitSoc, limit)
+				} else {
+					lp.log.ERROR.Printf("vehicle soc limit: %v", err)
+				}
 			}
 		}
 	}
-	//fmt.Println(lp.charger.(*charger.VaillantViaEbus, m))
 	if c, ok := lp.charger.(*struct {
 		*charger.VaillantViaEbus
 		api.Battery
 		api.Meter
 		api.SocLimiter
 	}); ok {
+		title := lp.Title()
+		lp.publish(keys.Title, title+c.ModeText())
 		if lp.socEstimator != nil {
 			soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
 			if err == nil {

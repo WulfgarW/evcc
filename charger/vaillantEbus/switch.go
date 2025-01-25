@@ -3,7 +3,7 @@ package vaillantEbus
 import (
 	"fmt"
 	//"math"
-	"time"
+	//"time"
 
 	"github.com/WulfgarW/sensonetEbus"
 )
@@ -30,98 +30,15 @@ func (sh *Switch) Enabled() (bool, error) {
 		return d.onoff, err
 	}
 	d.log.DEBUG.Println("Status last read from ebusd at:", state.LastGetSystem)
-	//d.log.DEBUG.Println("In Switch.Enabled: Zones[0].CurrentSpecialFunction=", state.State.Zones[0].CurrentSpecialFunction)
 
 	newQuickmode := d.ebusdConn.GetCurrentQuickMode()
 	d.log.DEBUG.Printf("In Switch.Enabled: GetCurrentQuickmode() returns \"%s\"", newQuickmode)
-	if newQuickmode == "" || newQuickmode == sensonetEbus.QUICKMODE_NOTHING {
+	if newQuickmode == "" { //|| newQuickmode == sensonetEbus.QUICKMODE_NOTHING {
 		d.onoff = false
 	} else {
 		d.onoff = true
 	}
 	return d.onoff, nil
-	/*
-		var err error
-		d := sh.Connection
-
-		state, err := d.ebusdConn.GetSystem(false)
-		if err != nil {
-			d.log.ERROR.Println("Switch.Enabled. Error: ", err)
-			return false, err
-		}
-		d.log.DEBUG.Println("Status last read from ebusd at:", state.Status.Time)
-		if d.currentQuickmode != "" {
-			d.log.DEBUG.Println("In Switch.Enabled: Connection.currentQuickmode:", d.currentQuickmode, "started at:", (d.quickmodeStarted).Format("2006-01-02 15:04:05"))
-		} else {
-			d.log.DEBUG.Println("In Switch.Enabled: Connection.currentQuickmode not set. Timestamp:", (d.quickmodeStarted).Format("2006-01-02 15:04:05"))
-			if state.Hotwater.HwcSFMode == sensonetEbus.HWC_SFMODE_BOOST {
-				d.log.DEBUG.Println("In Switch.Enabled: d.relData.Hotwater.HwcSFMode should be inactive but is on")
-				if d.quickmodeStarted.Add(1 * time.Minute).Before(time.Now()) {
-					// When the reported HwcSFMode is "load" more than 1 minute after the end of the charge session (or the start of evcc),
-					// this means that the heat pump is in hotwater boost
-					d.currentQuickmode = sensonetEbus.QUICKMODE_HOTWATER
-					d.quickmodeStarted = time.Now()
-					d.onoff = true
-				}
-			}
-			for _, z := range state.Zones {
-				if z.Index == d.heatingZone {
-					d.log.DEBUG.Println("In Switch.Enabled: Zone quick mode:", z.SFMode, ", Temperature Setpoint:", z.QuickVetoTemp, "(", d.ebusdConn.GetQuickVetoSetPoint(), "), Expires at:", d.ebusdConn.GetQuickVetoExpiresAt())
-					if z.SFMode == sensonetEbus.ZONE_SFMODE_BOOST {
-						d.log.DEBUG.Println("In Switch.Enabled: z.CurrentQuickmode should be inactive but is on")
-						if d.quickmodeStarted.Add(1 * time.Minute).Before(time.Now()) {
-							// When the reported z.SFMode is "veto" more than 1 minute after the end of a charge session (or the start of evcc),
-							// this means that the zone quick veto startet by other means as evcc
-							d.currentQuickmode = sensonetEbus.QUICKMODE_HEATING
-							d.quickmodeStarted = time.Now()
-							d.onoff = true
-						}
-					}
-				}
-			}
-		}
-		switch d.currentQuickmode {
-		case sensonetEbus.QUICKMODE_HOTWATER:
-			d.log.DEBUG.Println("In Switch.Enabled: Hotwater quick mode:", state.Hotwater.HwcSFMode)
-			if state.Hotwater.HwcSFMode == sensonetEbus.HWC_SFMODE_NORMAL {
-				d.log.DEBUG.Println("In Switch.Enabled: res.Hotwater.CurrentQuickmode should be active but is off")
-				if d.quickmodeStarted.Add(1 * time.Minute).Before(time.Now()) {
-					// When the reported HwcSFMode has changed to "auto" more than 1 minute after the beginning of the charge session,
-					// this means that the heat pump has stopped the hotwater boost itself
-					d.currentQuickmode = ""
-					d.quickmodeStopped = time.Now()
-					d.onoff = false
-				}
-			}
-		case sensonetEbus.QUICKMODE_HEATING:
-			for _, z := range state.Zones {
-				if z.Index == d.heatingZone {
-					d.log.DEBUG.Println("In Switch.Enabled: Zone quick mode:", z.SFMode, ", Temperature Setpoint:", z.QuickVetoTemp, "(", d.ebusdConn.GetQuickVetoSetPoint(), "), Expires at:", d.ebusdConn.GetQuickVetoExpiresAt())
-					if z.SFMode == sensonetEbus.ZONE_SFMODE_NORMAL {
-						d.log.DEBUG.Println("In Switch.Enabled: z.CurrentQuickmode should be active but is off")
-						if d.quickmodeStarted.Add(1 * time.Minute).Before(time.Now()) {
-							// When the reported z.SFMode has changed to "auto" more than 1 minute after the beginning of the charge session,
-							// this means that the zone quick veto ended or was stopped by other means as evcc
-							d.currentQuickmode = ""
-							d.quickmodeStopped = time.Now()
-							d.onoff = false
-						}
-					}
-				}
-			}
-		case sensonetEbus.QUICKMODE_NOTHING:
-			if d.quickmodeStarted.Add(10 * time.Minute).Before(time.Now()) {
-				d.log.DEBUG.Println("Idle charge mode for more than 10 minutes. Turning it off")
-				d.currentQuickmode = ""
-				d.quickmodeStopped = time.Now()
-				d.onoff = false
-			}
-		case "":
-			//Nothing to do
-		default:
-			d.log.ERROR.Println("Unknown quick mode in case statement:", d.currentQuickmode)
-		}
-		return d.onoff, nil*/
 }
 
 // Enable implements the api.Charger interface
@@ -154,11 +71,11 @@ func (sh *Switch) Enable(enable bool) error {
 			} else {
 				d.quickVetoSetPoint = heatingPar.VetoSetpoint
 			}
-			if heatingPar.VetoDuration < 0.0 {
+			/*if heatingPar.VetoDuration < 0.0 {
 				d.quickVetoExpiresAt = (time.Now().Add(time.Duration(int64(sensonetEbus.ZONEVETODURATION_DEFAULT*60) * int64(time.Minute)))).Format("15:04")
 			} else {
 				d.quickVetoExpiresAt = (time.Now().Add(time.Duration(int64(heatingPar.VetoDuration*60) * int64(time.Minute)))).Format("15:04")
-			}
+			}*/
 		}
 	} else {
 		result, err := d.ebusdConn.StopStrategybased(&heatingPar)
@@ -168,7 +85,7 @@ func (sh *Switch) Enable(enable bool) error {
 		}
 		d.log.DEBUG.Println("In Switch.Enable: StopStrategybased returns: ", result)
 		d.quickVetoSetPoint = 0.0
-		d.quickVetoExpiresAt = ""
+		//d.quickVetoExpiresAt = ""
 	}
 	d.onoff = enable
 	return err

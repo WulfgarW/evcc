@@ -9,8 +9,6 @@ import (
 // Sensonet_vehicle is an api.Vehicle implementation for Vaillant Vks heat pump controlled by sensonet
 type Sensonet_vehicle struct {
 	*embed
-	//	vehicle *Vehicle
-	//	Title string
 	PvUseStrategy string
 	conn          *sensonet.Connection
 }
@@ -30,10 +28,13 @@ func NewSensonetVehicleFromConfig(other map[string]interface{}) (api.Vehicle, er
 		return nil, err
 	}
 
+	log := util.NewLogger("sensonet_vehicle")
+
 	//Get pointer to the connection struct of the charger sensonet
 	conn, err := sensonet.GetSensoNetConn()
 	if err != nil {
-		return nil, err
+		log.ERROR.Println(err)
+		log.ERROR.Println("You can not use the sensonet_vehicle without a sensonet charger. You can ignore this message, if you are in evcc configure")
 	}
 
 	v := &Sensonet_vehicle{
@@ -59,6 +60,9 @@ func NewSensonetVehicleFromConfig(other map[string]interface{}) (api.Vehicle, er
 
 // Soc implements the api.Vehicle interface
 func (v *Sensonet_vehicle) Soc() (float64, error) {
+	if _, err := sensonet.GetSensoNetConn(); err != nil {
+		return 0, err
+	}
 	tt, err := v.conn.CurrentTemp()
 	if err != nil {
 		return 0, err
@@ -71,6 +75,9 @@ func (v *Sensonet_vehicle) Soc() (float64, error) {
 
 // Status implements the api.ChargeState interface
 func (v *Sensonet_vehicle) Status() (api.ChargeStatus, error) {
+	if _, err := sensonet.GetSensoNetConn(); err != nil {
+		return api.StatusA, err
+	}
 	status, err := v.conn.Status()
 	if err != nil {
 		return api.StatusA, err
@@ -82,42 +89,12 @@ var _ api.SocLimiter = (*Sensonet_vehicle)(nil)
 
 // TargetSoc implements the api.SocLimiter interface
 func (v *Sensonet_vehicle) GetLimitSoc() (int64, error) {
+	if _, err := sensonet.GetSensoNetConn(); err != nil {
+		return 0, err
+	}
 	tt, err := v.conn.TargetTemp()
 	if err != nil {
 		return 0, err
 	}
-	return int64(tt), err
+	return tt, err
 }
-
-// StartCharge implements the api.VehicleChargeController interface
-/*var _ api.Resurrector = (*Sensonet_vehicle)(nil)
-
-func (v *Sensonet_vehicle) WakeUp() error {
-	//_, err := v.vehicle.Wakeup()
-	err := error(nil)
-	return v.apiError(err)
-}
-
-var _ api.VehicleChargeController = (*Sensonet_vehicle)(nil)
-
-// StartCharge implements the api.VehicleChargeController interface
-func (v *Sensonet_vehicle) StartCharge() error {
-	//_, err := v.vehicle.StartCharging()
-	v.SetTitle("Sensonet_vehicle starting load process")
-	err := error(nil)
-	return v.apiError(err)
-}
-
-// StopCharge implements the api.VehicleChargeController interface
-func (v *Sensonet_vehicle) StopCharge() error {
-	//err := v.apiError(v.vehicle.StopCharging())
-	v.SetTitle("Sensonet_vehicle stopping load process")
-	err := error(nil)
-
-	// ignore sleeping vehicle
-	if errors.Is(err, api.ErrAsleep) {
-		err = nil
-	}
-
-	return err
-}*/

@@ -37,7 +37,7 @@ type Connection struct {
 	heatingTemperatureOffset float64
 	onoff                    bool
 	quickVetoSetPoint        float32
-	quickVetoExpiresAt       string
+	//quickVetoExpiresAt       string
 }
 
 // Global variable sensoNetConn is used to make data available in vehicle sensonet-vehicle
@@ -88,12 +88,9 @@ func NewConnection(user, password, realm, pvUseStrategy string, heatingZone, pha
 		sensoNetConn.log.DEBUG.Println("In connection.NewConnection: sensoNetConn already initialised")
 		return sensoNetConn, nil
 	} else {
-		utillog := util.NewLogger("sensonet")
+		utillog := util.NewLogger("sensonet").Redact(user, password)
 		client := request.NewClient(utillog)
 		ctxClient := request.NewClient(utillog)
-		/*client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		}*/
 
 		conn := &Connection{
 			client: client,
@@ -109,11 +106,6 @@ func NewConnection(user, password, realm, pvUseStrategy string, heatingZone, pha
 		conn.log = utillog
 
 		var err error
-		/*conn.client.Jar, err = cookiejar.New(nil)
-		if err != nil {
-			err = fmt.Errorf("could not reset cookie jar. error: %s", err)
-			return conn, err
-		}*/
 
 		ctx := context.WithValue(context.TODO(), oauth2.HTTPClient, ctxClient)
 		clientCtx := context.WithValue(ctx, oauth2.HTTPClient, ctxClient)
@@ -214,7 +206,7 @@ func (d *Connection) CurrentTemp() (float64, error) {
 }
 
 // TargetTemp is called bei TargetSoc
-func (d *Connection) TargetTemp() (float64, error) {
+func (d *Connection) TargetTemp() (int64, error) {
 	state, err := d.sensonetCtrl.GetSystem(d.systemId)
 	if err != nil {
 		d.log.ERROR.Println("connection.TargetTemp. Error: ", err)
@@ -243,18 +235,18 @@ func (d *Connection) TargetTemp() (float64, error) {
 		zoneData := sensonetlib.GetZoneData(state, d.heatingZone)
 		if zoneData != nil {
 			if zoneData.State.CurrentSpecialFunction == "QUICK_VETO" {
-				return float64(zoneData.State.DesiredRoomTemperatureSetpoint), nil
+				return int64(zoneData.State.DesiredRoomTemperatureSetpoint), nil
 			} else {
-				return float64(d.quickVetoSetPoint), nil
+				return int64(d.quickVetoSetPoint), nil
 			}
 		}
-		return float64(d.quickVetoSetPoint), nil
+		return int64(d.quickVetoSetPoint), nil
 	}
 	if !hotWaterOn {
 		zoneData := sensonetlib.GetZoneData(state, d.heatingZone)
-		return zoneData.State.DesiredRoomTemperatureSetpoint, nil
+		return int64(zoneData.State.DesiredRoomTemperatureSetpoint), nil
 	} else {
-		return hotWaterSetpoint, nil
+		return int64(hotWaterSetpoint), nil
 	}
 }
 
@@ -309,11 +301,14 @@ func (d *Connection) ModeText() string {
 	case sensonetlib.QUICKMODE_HOTWATER:
 		return " (Hotwater Boost active)"
 	case sensonetlib.QUICKMODE_HEATING:
-		if d.quickVetoExpiresAt != "" {
-			return " (Heating Quick Veto active. Ends " + d.quickVetoExpiresAt + ")"
+		if d.sensonetCtrl.GetQuickModeExpiresAt() != "" {
+			return " (Heating Quick Veto active. Ends " + d.sensonetCtrl.GetQuickModeExpiresAt() + ")"
 		}
 		return " (Heating Quick Veto active)"
 	case sensonetlib.QUICKMODE_NOTHING:
+		if d.sensonetCtrl.GetQuickModeExpiresAt() != "" {
+			return " (charger running idle. Ends " + d.sensonetCtrl.GetQuickModeExpiresAt() + "; " + tempInfo
+		}
 		return " (charger running idle; " + tempInfo
 	}
 	return " (regular mode; " + tempInfo

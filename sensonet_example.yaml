@@ -1,7 +1,7 @@
 
 log: debug # Für die Testphase sollte 'debug' aktiviert sein
 
-interval: 30s # Dieser Wert hat sich bisher als gut erwiesen
+interval: 60s # Dieser Wert hat sich bisher als gut erwiesen
 
 meters:
 - type: template
@@ -21,28 +21,35 @@ chargers:
   pvusestrategy: hotwater_then_heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
   icon: heater
   heating: true 
+  integrateddevice: true # Wenn man im laufenden evcc-Betrieb zwischen verschiedenen PV-Use-Strategien umschalten will, so ist dieser Parameter auszukommentieren
   name: vaillant #Kann frei gewählt werden
 
-vehicles:
-- type: template
-  template: sensonet_vehicle 
-  title: Aerotherm-Split  # Kann frei gewählt werden
-  name: aerotherm # Kann frei gewählt werden
-  icon: heater
-  phases: 3
+#vehicles: #Die folgenden, auskommentierten Vehicle-Definitionen sind nur zu aktivieren, wenn man im laufenden evcc-Betrieb durch Wechsel des "Fahrzeugs" zwischen verschiedenen PV-Use-Strategien umschalten will
+#- type: template
+#  template: sensonet_vehicle 
+#  title: Vaillant  # Kann frei gewählt werden
+#  pvusestrategy: hotwater_then_heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
+#  name: aroTHERM # Kann frei gewählt werden
+#  icon: heater
+#- type: template
+#  template: sensonet_vehicle 
+#  title: Vaillant(Heating)  # Kann frei gewählt werden
+#  pvusestrategy: heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
+#  name: aroTHERM-heating # Kann frei gewählt werden
+#  icon: heater
 
 loadpoints:
 - title: Wärmepumpe # Kann frei gewählt werden
   charger: vaillant # Entsprechend dem im Abschnitt 'chargers' gewählten Namen
-  meter: heatpumppwr # Entsprechend dem im Abschnitt 'meters' gewählten Namen. Sonst diese Zeile streichen
-  vehicle: aerotherm # Entsprechend dem im Abschnitt 'vehicles' gewählten Namen
+  meter: heatpumppwr # Entsprechend dem im Abschnitt 'meters' gewählten Namen. Sonst diese Zeile auskommentieren
+#  vehicle: aroTHERM # Entsprechend dem im Abschnitt 'vehicles' gewählten Namen (Ist nur erforderlich, wenn beim sensonet-Charger 'integrateddevice: true' auskommentiert wurde)
   mode: off # Zur Sicherheit beim Start von evcc auf 'off'. Kann aber auch auf 'pv' gesetzt werden
   enable:
       threshold: -2500
       delay: 1m
   disable:
       threshold: -2000
-      delay: 5m # Laufzeit mindestens 5 Minuten
+      delay: 10m # Laufzeit mindestens 5 Minuten
   guardduration: 5m # Pause mindestens 5 Minunten
 
 site: # Hier die Daten der eigenen Anlage verwenden

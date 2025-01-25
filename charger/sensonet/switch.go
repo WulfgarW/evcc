@@ -2,7 +2,7 @@ package sensonet
 
 import (
 	"fmt"
-	"time"
+	//"time"
 
 	sensonetlib "github.com/WulfgarW/sensonet"
 )
@@ -29,11 +29,11 @@ func (sh *Switch) Enabled() (bool, error) {
 		d.log.ERROR.Println("switch.Enabled. Error: ", err)
 		return d.onoff, err
 	}
-	d.log.DEBUG.Println("In Switch.Enabled: Zones[0].CurrentSpecialFunction=", state.State.Zones[0].CurrentSpecialFunction)
+	d.log.DEBUG.Println(fmt.Sprintf("In Switch.Enabled: Zones[%d].CurrentSpecialFunction=%s", d.heatingZone, state.State.Zones[d.heatingZone].CurrentSpecialFunction))
 
 	newQuickmode := d.sensonetCtrl.GetCurrentQuickMode()
 	d.log.DEBUG.Printf("In Switch.Enabled: GetCurrentQuickmode() returns \"%s\"", newQuickmode)
-	if newQuickmode == "" || newQuickmode == sensonetlib.QUICKMODE_NOTHING {
+	if newQuickmode == "" { //|| newQuickmode == sensonetlib.QUICKMODE_NOTHING {
 		d.onoff = false
 	} else {
 		d.onoff = true
@@ -73,11 +73,11 @@ func (sh *Switch) Enable(enable bool) error {
 			} else {
 				d.quickVetoSetPoint = heatingPar.VetoSetpoint
 			}
-			if heatingPar.VetoDuration < 0.0 {
+			/*if heatingPar.VetoDuration < 0.0 {
 				d.quickVetoExpiresAt = (time.Now().Add(time.Duration(int64(sensonetlib.ZONEVETODURATION_DEFAULT*60) * int64(time.Minute)))).Format("15:04")
 			} else {
 				d.quickVetoExpiresAt = (time.Now().Add(time.Duration(int64(heatingPar.VetoDuration*60) * int64(time.Minute)))).Format("15:04")
-			}
+			}*/
 		}
 	} else {
 		result, err := d.sensonetCtrl.StopStrategybased(d.systemId, &heatingPar, &hotwaterPar)
@@ -87,7 +87,7 @@ func (sh *Switch) Enable(enable bool) error {
 		}
 		d.log.DEBUG.Println("In Switch.Enable: StopStrategybased returns: ", result)
 		d.quickVetoSetPoint = 0.0
-		d.quickVetoExpiresAt = ""
+		//d.quickVetoExpiresAt = ""
 	}
 	d.onoff = enable
 	return err
