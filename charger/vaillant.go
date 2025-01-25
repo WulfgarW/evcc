@@ -26,7 +26,6 @@ import (
 
 	"github.com/WulfgarW/sensonet"
 	"github.com/evcc-io/evcc/api"
-	"github.com/evcc-io/evcc/provider"
 	"github.com/evcc-io/evcc/util"
 	"github.com/evcc-io/evcc/util/request"
 	"github.com/samber/lo"
@@ -158,7 +157,7 @@ func NewVaillantFromConfig(ctx context.Context, other map[string]interface{}) (a
 
 	var power func() (float64, error)
 	if devices, _ := conn.GetMpcData(systemId); len(devices) > 0 {
-		power = provider.Cached(func() (float64, error) {
+		power = util.Cached(func() (float64, error) {
 			res, err := conn.GetMpcData(systemId)
 			return lo.SumBy(res, func(d sensonet.MpcDevice) float64 {
 				return d.CurrentPower
@@ -166,26 +165,36 @@ func NewVaillantFromConfig(ctx context.Context, other map[string]interface{}) (a
 		}, cc.Cache)
 	}
 
-	var temp func() (float64, error)
-	temp = provider.Cached(func() (float64, error) {
+	heatingTemp := func(zz []sensonet.StateZone) float64 {
+		z, _ := lo.Find(zz, func(z sensonet.StateZone) bool {
+			return z.Index == cc.HeatingZone
+		})
+		return z.CurrentRoomTemperature
+	}
+
+	var heatingTempSensor bool
+	if heating {
 		system, err := conn.GetSystem(systemId)
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
-		if heating {
-			currentTemp := 5.0
-			// Some heating zones have no room temperature sensor. If that's the case, we take the sensor with the highest value from the other zones
-			for _, z := range system.State.Zones {
-				if currentTemp == 5.0 && z.CurrentRoomTemperature > currentTemp {
-					currentTemp = z.CurrentRoomTemperature
-				}
-				if z.Index == cc.HeatingZone && z.CurrentRoomTemperature != 0.0 {
-					currentTemp = z.CurrentRoomTemperature
-				}
+		heatingTempSensor = heatingTemp(system.State.Zones) > 0
+	}
+
+	var temp func() (float64, error)
+	if !heating || heatingTempSensor {
+		temp = util.Cached(func() (float64, error) {
+			system, err := conn.GetSystem(systemId)
+			if err != nil {
+				return 0, err
 			}
-			return currentTemp, nil
-		} else {
+
 			switch {
+			case heatingTempSensor:
+				if res := heatingTemp(system.State.Zones); res > 0 {
+					return res, nil
+				}
+				return 0, api.ErrNotAvailable
 			case len(system.State.Dhw) > 0:
 				return system.State.Dhw[0].CurrentDhwTemperature, nil
 			case len(system.State.DomesticHotWater) > 0:

@@ -24,9 +24,9 @@ import (
 	"github.com/evcc-io/evcc/core/keys"
 	"github.com/evcc-io/evcc/hems"
 	"github.com/evcc-io/evcc/meter"
-	"github.com/evcc-io/evcc/provider/golang"
-	"github.com/evcc-io/evcc/provider/javascript"
-	"github.com/evcc-io/evcc/provider/mqtt"
+	"github.com/evcc-io/evcc/plugin/golang"
+	"github.com/evcc-io/evcc/plugin/javascript"
+	"github.com/evcc-io/evcc/plugin/mqtt"
 	"github.com/evcc-io/evcc/push"
 	"github.com/evcc-io/evcc/server"
 	"github.com/evcc-io/evcc/server/db"
@@ -97,9 +97,9 @@ func loadConfigFile(conf *globalconfig.All, checkDB bool) error {
 	}
 
 	// user did not specify a database path
-	if conf.Database.Dsn == "" {
+	if conf.Database.Dsn == "" && checkDB {
 		// check if service database exists
-		if _, err := os.Stat(serviceDB); err == nil && checkDB {
+		if _, err := os.Stat(serviceDB); err == nil {
 			// service database found, ask user what to do
 			sudo := ""
 			if !isWritable(serviceDB) {
@@ -120,9 +120,6 @@ evcc --database ~/.evcc/evcc.db
 If you know what you're doing, you can skip the database check with the --ignore-db flag.
 			`)
 		}
-
-		// default to user database
-		conf.Database.Dsn = userDB
 	}
 
 	// parse log levels after reading config
@@ -134,7 +131,7 @@ If you know what you're doing, you can skip the database check with the --ignore
 }
 
 func isWritable(filePath string) bool {
-	file, err := os.OpenFile(filePath, os.O_WRONLY, 0666)
+	file, err := os.OpenFile(filePath, os.O_WRONLY, 0o666)
 	if err != nil {
 		return false
 	}
@@ -525,7 +522,7 @@ func configureEnvironment(cmd *cobra.Command, conf *globalconfig.All) (err error
 // configureDatabase configures session database
 func configureDatabase(conf globalconfig.DB) error {
 	if conf.Dsn == "" {
-		return errors.New("database dsn not configured")
+		conf.Dsn = userDB
 	}
 
 	if err := db.NewInstance(conf.Type, conf.Dsn); err != nil {
@@ -709,7 +706,7 @@ func configureEEBus(conf *eebus.Config) error {
 }
 
 // setup messaging
-func configureMessengers(conf *globalconfig.Messaging, vehicles push.Vehicles, valueChan chan<- util.Param, cache *util.Cache) (chan push.Event, error) {
+func configureMessengers(conf *globalconfig.Messaging, vehicles push.Vehicles, valueChan chan<- util.Param, cache *util.ParamCache) (chan push.Event, error) {
 	// migrate settings
 	if settings.Exists(keys.Messaging) {
 		if err := settings.Yaml(keys.Messaging, new(map[string]any), &conf); err != nil {
