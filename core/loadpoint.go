@@ -1897,7 +1897,7 @@ func (lp *Loadpoint) Update(sitePower, batteryBoostPower float64, rates api.Rate
 	//WW added by WW to show the current quick mode in the vehicle title and the SoC data even if no charge session active
 	if c, ok := lp.charger.(*charger.Sensonet); ok {
 		if lp.chargerHasFeature(api.IntegratedDevice) {
-			title := lp.Title()
+			title := lp.GetTitle()
 			lp.publish(keys.Title, title+c.ModeText())
 			if lp.socEstimator != nil {
 				soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
@@ -1936,7 +1936,7 @@ func (lp *Loadpoint) Update(sitePower, batteryBoostPower float64, rates api.Rate
 	}
 	if c, ok := lp.charger.(*charger.VaillantEbus); ok {
 		if lp.chargerHasFeature(api.IntegratedDevice) {
-			title := lp.Title()
+			title := lp.GetTitle()
 			lp.publish(keys.Title, title+c.ModeText())
 			if lp.socEstimator != nil {
 				soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
@@ -1979,7 +1979,7 @@ func (lp *Loadpoint) Update(sitePower, batteryBoostPower float64, rates api.Rate
 		api.Meter
 		api.SocLimiter
 	}); ok {
-		title := lp.Title()
+		title := lp.GetTitle()
 		lp.publish(keys.Title, title+c.ModeText())
 		if lp.socEstimator != nil {
 			soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
