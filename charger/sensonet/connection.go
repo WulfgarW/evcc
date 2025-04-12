@@ -135,6 +135,7 @@ func NewConnection(user, password, realm, pvUseStrategy string, heatingZone, pha
 		utillog.DEBUG.Println("In connection.NewConnection: Call of sensonetlib.NewConnection() successful")
 		conn.sensonetCtrl = snctrl
 		homes, err := conn.sensonetCtrl.GetHomes()
+		utillog.TRACE.Println(fmt.Sprintf("In Connection.NewConnection: GetHomes returned: homes=%v", homes))
 		if err != nil {
 			err = fmt.Errorf("could not get Homes[] information. error: %s", err)
 			return conn, err

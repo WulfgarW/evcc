@@ -25,6 +25,7 @@ func (sh *Switch) Enabled() (bool, error) {
 	d := sh.Connection
 	//Calling GetSystem to make sure that data are updated
 	state, err := d.sensonetCtrl.GetSystem(d.systemId)
+	d.log.TRACE.Println(fmt.Sprintf("In Switch.Enabled: GetSystem returned: state=%v", state))
 	if err != nil {
 		d.log.ERROR.Println("switch.Enabled. Error: ", err)
 		return d.onoff, err
