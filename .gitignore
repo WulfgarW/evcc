@@ -1,5 +1,6 @@
 __debug_bin*
 .vscode
+!.vscode/extensions.json
 .cache
 .DS_store
 *.gz
@@ -48,3 +49,5 @@ asset-stats.html
 
 debug_sensonet_reldata.txt
 debug_sensonet_system.txt
+/tsconfig.tsbuildinfo
+*storybook.log
