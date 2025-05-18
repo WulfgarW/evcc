@@ -159,8 +159,8 @@ github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.m
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/ernesto-jimenez/httplogger v0.0.0-20220128121225-117514c3f345 h1:AZLrCR38RDhsyCQakz1UxCx72As18Ai5mObrKvT8DK8=
 github.com/ernesto-jimenez/httplogger v0.0.0-20220128121225-117514c3f345/go.mod h1:pw+gaKQ52Cl/SrERU62yQAiWauPpLgKpuR1hkxwL4tM=
-github.com/evcc-io/modbus v0.0.0-20250403111054-69e330ffbd07 h1:OQNaVvgKSJabdxrQVkXANhpfsinAil1GzbOwHgghxTo=
-github.com/evcc-io/modbus v0.0.0-20250403111054-69e330ffbd07/go.mod h1:swrNGAVgI1r/3d/sEKE7qgujdRR9aHVPYKyc3gvpVTc=
+github.com/evcc-io/modbus v0.0.0-20250501165638-8b6f1fbdb7ea h1:F6eyC8V8wvc3ranlsR4coAls+OPBkVvxyX0a2VqdlPc=
+github.com/evcc-io/modbus v0.0.0-20250501165638-8b6f1fbdb7ea/go.mod h1:swrNGAVgI1r/3d/sEKE7qgujdRR9aHVPYKyc3gvpVTc=
 github.com/evcc-io/ocpp-go v0.0.0-20250322092544-c0c6094051c0 h1:Qz34Pm1Wr05jjJia5g2On3zRqdZh+BLTwqHgJGsiIh4=
 github.com/evcc-io/ocpp-go v0.0.0-20250322092544-c0c6094051c0/go.mod h1:2kcukDdhui4u730VfnYVWuwzDLgw+mBRGDir/QAyBhg=
 github.com/evcc-io/rct v0.1.2-0.20250315164247-d2f41b161785 h1:OWCBVMcPsVTffdiZN3VYaq9p4fsWlzd490J6pekaKLA=
