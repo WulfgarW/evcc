@@ -48,6 +48,5 @@ loadpoints:
       threshold: -2500
       delay: 1m
   disable:
-      threshold: -2100
-      delay: 10m # Laufzeit mindestens 3 Minuten
-  guardduration: 3m # Pause mindestens 3 Minunten
+      threshold: 500
+      delay: 10m # Laufzeit mindestens 10 Minuten
