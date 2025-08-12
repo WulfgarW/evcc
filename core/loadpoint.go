@@ -2003,7 +2003,7 @@ func (lp *Loadpoint) Update(sitePower, batteryBoostPower float64, consumption, f
 		} else {
 			title := "Guest"
 			if lp.vehicle != nil {
-				title = lp.vehicle.Title()
+				title = lp.vehicle.GetTitle()
 			}
 			lp.publish(keys.VehicleName, title+c.ModeText())
 			if lp.socEstimator != nil {
@@ -2042,7 +2042,7 @@ func (lp *Loadpoint) Update(sitePower, batteryBoostPower float64, consumption, f
 		} else {
 			title := "Guest"
 			if lp.vehicle != nil {
-				title = lp.vehicle.Title()
+				title = lp.vehicle.GetTitle()
 			}
 			lp.publish(keys.VehicleName, title+c.ModeText())
 			if lp.socEstimator != nil {

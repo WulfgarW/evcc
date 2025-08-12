@@ -137,7 +137,7 @@ func NewVaillantViaEbusFromConfig(ctx context.Context, other map[string]interfac
 		return Boost, err
 	}
 
-	sgr, err := NewSgReady(ctx, &cc.embed, set, get)
+	sgr, err := NewSgReady(ctx, &cc.embed, set, get, nil)
 	if err != nil {
 		return nil, err
 	}

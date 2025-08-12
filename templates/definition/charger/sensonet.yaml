@@ -10,22 +10,28 @@ requirements:
     en: To use this charger, a user account for the myVaillant portal and a heat pump system with a sensoNET module (VRC921) or a myVaillant connect module (VRC940f) are needed.
 params:
   - name: user
-    help:
+    description:
       de: User-ID für das myVaillant-Portal
       en: User id for the myVaillant portal
     required: true
   - name: password
-    help:
+    description:
       de: Passwort für das myVaillant-Portal
       en: Password for the myVaillant portal
     required: true
   - name: realm
     default: vaillant-germany-b2c
+    description:
+      de: Realm für das myVaillant-Portal
+      en: Realm for the myVaillant portal
     mask: true
   - name: pvusestrategy
     help:
       de: Steuert, welcher Sondermodus bei Start einer "Ladesession" initiiert werden soll. 
-      en: Controls with special mode shall be initiated when a "load session" is started
+      en: Controls which special mode shall be initiated when a "load session" is started
+    description:
+      de: Zu initiierender WP-Modus bei einer "Ladesession"
+      en: Mode to be initiated when a "load session" starts
     choice: ['hotwater','heating','hotwater_then_heating']
     default: hotwater_then_heating
   - name: heatingzone
@@ -33,12 +39,18 @@ params:
     help:
       de: Id der Heizzone, die für Zone-Quick-Veto-Sessions verwendet werden soll
       en: Id of the heating zone to be used when starting zone quick veto sessions 
+    description:
+      de: Id der Heizzone
+      en: Id of the heating zone 
     default: 0
   - name: heatingtemperatureoffset
     type: float
     help:
       de: Offset-Wert, der auf den Sollwert der Heizzone im Normalmodus addiert wird, um den Sollwert für die Quick-Veto-Session zu ermitteln
       en: Offset value to be added to the normal mode temperature setpoint for the heating zone giving the temperature setpoint for the zone quick veto
+    description:
+      de: Additiver Offset-Wert ggü. dem normalen Sollwert
+      en: Offset value to be added to the normal setpoint
     default: 2
   - name: phases
     type: int

@@ -45,7 +45,7 @@ func NewVaillantEbusVehicleFromConfig(other map[string]interface{}) (api.Vehicle
 		conn:          conn,
 	}
 
-	if v.Title() == "" {
+	if v.GetTitle() == "" {
 		v.SetTitle("VaillantEbus_V")
 	}
 

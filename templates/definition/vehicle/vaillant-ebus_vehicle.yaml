@@ -13,6 +13,9 @@ params:
   - name: title
     required: true
   - name: pvusestrategy
+    description:
+      de: Zu initiierender WP-Modus bei einer "Ladesession"
+      en: Mode to be initiated when a "load session" starts
     choice: ['hotwater','heating','hotwater_then_heating','not_set']
     default: 'not_set'
   - name: icon

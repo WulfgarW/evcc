@@ -13,12 +13,18 @@ params:
     help:
       de: Netzwerkadresse oder -name und der Port, unter dem der ebusd-Service erreichbar ist.
       en: Network address or network name and the port number where the ebusd service is residing.
+    description:
+      de: Netzwerkadresse/-name und Port des ebusd-Service
+      en: Network address/name and port for ebusd service
     required: true
     default: localhost:8888
   - name: pvusestrategy
     help:
       de: Steuert, welcher Sondermodus bei Start einer "Ladesession" initiiert werden soll. 
       en: Controls with special mode shall be initiated when a "load session" is started
+    description:
+      de: Zu initiierender WP-Modus bei einer "Ladesession"
+      en: Mode to be initiated when a "load session" starts
     choice: ['hotwater','heating','hotwater_then_heating']
     default: hotwater_then_heating
   - name: heatingzone
@@ -26,12 +32,18 @@ params:
     help:
       de: Id der Heizzone, die für Zone-Quick-Veto-Sessions verwendet werden soll
       en: Id of the heating zone to be used when starting zone quick veto sessions 
+    description:
+      de: Id der Heizzone
+      en: Id of the heating zone 
     default: 0
   - name: heatingtemperatureoffset
     type: float
     help:
       de: Offset-Wert, der auf den Sollwert der Heizzone im Normalmodus addiert wird, um den Sollwert für die Quick-Veto-Session zu ermitteln
       en: Offset value to be added to the normal mode temperature setpoint for the heating zone giving the temperature setpoint for the zone quick veto
+    description:
+      de: Additiver Offset-Wert ggü. dem normalen Sollwert
+      en: Offset value to be added to the normal setpoint
     default: 2
   - name: phases
     type: int

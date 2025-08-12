@@ -43,7 +43,7 @@ func NewSensonetVehicleFromConfig(other map[string]interface{}) (api.Vehicle, er
 		conn:          conn,
 	}
 
-	if v.Title() == "" {
+	if v.GetTitle() == "" {
 		v.SetTitle("Sensonet_V")
 	}
 
