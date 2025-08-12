@@ -44,8 +44,12 @@
       "ocppLabel": "URL du serveur OCPP",
       "switchsockets": "Prises commutables",
       "template": "Fabricant",
-      "titleAdd": "Ajouter un chargeur",
-      "titleEdit": "Modifier chargeur"
+      "titleAdd": {
+        "charging": "Ajouter un chargeur"
+      },
+      "titleEdit": {
+        "charging": "Modifier chargeur"
+      }
     },
     "circuits": {
       "description": "Vérifiez que la somme de tous les points de charges connectés à un circuit ne dépassent pas les limites de puissance et de courant. Les circuits peuvent être combinés pour construire une hiérarchie.",
@@ -113,6 +117,9 @@
       "batteryStorage": "Batterie",
       "solarSystem": "Système photovoltaïque"
     },
+    "editor": {
+      "loading": "Chargement de l’éditeur YAML…"
+    },
     "eebus": {
       "description": "Configuration permettant à evcc de communiquer avec d’autres appareils EEBus.",
       "title": "EEBus"
@@ -130,6 +137,8 @@
     },
     "general": {
       "cancel": "Annuler",
+      "customHelp": "Créer un appareil sur mesure en utilisant le système de plugins d’evcc.",
+      "customOption": "Appareil sur mesure",
       "delete": "Supprimer",
       "docsLink": "Se référer à la documentation.",
       "experimental": "Expérimental",
@@ -155,6 +164,9 @@
       "description": "Connecter evcc à un autre Système de Gestion d’Energie Domestique.",
       "title": "SGED"
     },
+    "icon": {
+      "change": "changer"
+    },
     "influx": {
       "description": "Écrit les données de charge et autres métriques dans InfluxDB. Utilise Grafana ou d’autres outils pour visualiser les données.",
       "descriptionToken": "Se référer à la document InfluxDB pour apprendre comment en créer une. https://docs.influxdata.com/influxdb/v2/admin/",
@@ -172,11 +184,17 @@
       "v2Support": "Revenir à InfluxDB 2.x"
     },
     "loadpoint": {
-      "addCharger": "Ajouter un chargeur",
+      "addCharger": {
+        "charging": "Ajouter un chargeur"
+      },
       "addMeter": "Ajouter un compteur dédié pour le chargeur",
       "cancel": "Annuler",
-      "chargerError": "Il est nécessaire de configurer un chargeur.",
-      "chargerLabel": "Chargeur",
+      "chargerError": {
+        "charging": "Il est nécessaire de configurer un chargeur."
+      },
+      "chargerLabel": {
+        "charging": "Chargeur"
+      },
       "chargerPower11kw": "11 kW",
       "chargerPower11kwHelp": "Va utiliser des courants de 6 à 16 A.",
       "chargerPower22kw": "22 kW",
@@ -185,9 +203,12 @@
       "chargerPowerCustomHelp": "Définir un intervalle de courant personnalisé.",
       "chargerTypeLabel": "Type de chargeur",
       "chargingTitle": "En charge",
+      "circuitHelp": "Assignation de la gestion de charge afin d’assurer que les limites de puissance et de courant ne sont pas dépassées.",
       "circuitLabel": "Circuit",
       "circuitUnassigned": "non assigné",
-      "defaultModeHelp": "Mode de charge lors de la connexion du véhicule.",
+      "defaultModeHelp": {
+        "charging": "Mode de charge lors de la connexion du véhicule."
+      },
       "defaultModeHelpKeep": "Conserver le dernier mode de charge sélectionné.",
       "defaultModeLabel": "Mode par défaut",
       "delete": "Supprimer",
@@ -269,6 +290,7 @@
     "meter": {
       "cancel": "Annuler",
       "delete": "Supprimer",
+      "generic": "Intégration génériques",
       "option": {
         "aux": "Ajouter un consommateur auto-regulé",
         "battery": "Ajouter un compteur de batterie",
@@ -276,6 +298,7 @@
         "pv": "Ajouter un compteur solaire"
       },
       "save": "Enregistrer",
+      "specific": "Intégrations spécifiques",
       "template": "Fabricant",
       "titleChoice": "Que voulez-vous ajouter ?",
       "validateSave": "Valider et enregistrer"
@@ -417,6 +440,7 @@
       "minimumCurrent": "Courant minimum",
       "minimumCurrentHelp": "Ne descends en dessous de 6A que si tu sais ce que tu fais.",
       "online": "Véhicules avec API en ligne",
+      "primary": "Intégration génériques",
       "priority": "Priorité",
       "priorityHelp": "Une priorité plus élevée signifie que ce véhicule bénéficie d'un accès privilégié au surplus solaire.",
       "save": "Enregistrer",
@@ -569,6 +593,7 @@
   },
   "loginModal": {
     "cancel": "Annuler",
+    "demoMode": "La connexion n'est pas prise en charge en mode démo.",
     "error": "Connection échouée : ",
     "iframeHint": "Ouvrir evcc dans un nouvel onglet.",
     "iframeIssue": "Votre mot de passe est correct, mais votre navigateur n’a pas gardé le cookie d’authentification. Cela peut arriver si evcc est accédé dans un iframe via HTTP.",
@@ -862,10 +887,9 @@
       "solarpercentage": "% solaire",
       "vehicle": "Véhicule"
     },
-    "csvMonth": "Télécharger CSV {month}",
+    "csvPeriod": "Télécharger CSV {period}",
     "csvTotal": "Télécharger CSV total",
     "date": "Début session",
-    "downloadCsv": "Télécharger au format CSV",
     "energy": "Chargé",
     "filter": {
       "allLoadpoints": "tous les points de chargement",
@@ -945,7 +969,7 @@
     }
   },
   "smartCost": {
-    "activeHours": "{charging} sur {total}",
+    "activeHours": "{active} sur {total}",
     "activeHoursLabel": "Heures actives",
     "applyToAll": "Appliquer partout ?",
     "batteryDescription": "Charge la batterie domestique avec du courant du réseau.",

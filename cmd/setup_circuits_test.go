@@ -33,6 +33,10 @@ func (suite *circuitsTestSuite) SetupTest() {
 	config.Reset()
 }
 
+func (suite *circuitsTestSuite) charger() api.Charger {
+	return api.NewMockCharger(gomock.NewController(suite.T()))
+}
+
 func (suite *circuitsTestSuite) TestCircuitConf() {
 	var conf globalconfig.All
 	viper.SetConfigType("yaml")
@@ -58,7 +62,7 @@ loadpoints:
 	// empty charger
 	suite.Require().NoError(config.Chargers().Add(config.NewStaticDevice(config.Named{
 		Name: "test",
-	}, api.Charger(nil))))
+	}, suite.charger())))
 
 	err := configureLoadpoints(conf)
 	suite.Require().NoError(err)
@@ -89,7 +93,7 @@ loadpoints:
 	// empty charger
 	suite.Require().NoError(config.Chargers().Add(config.NewStaticDevice(config.Named{
 		Name: "test",
-	}, api.Charger(nil))))
+	}, suite.charger())))
 
 	err := configureLoadpoints(conf)
 	suite.Require().NoError(err)
@@ -102,8 +106,7 @@ loadpoints:
 
 	// circuit without device
 	err = validateCircuits(lps)
-	suite.Require().Error(err)
-	suite.Require().Equal("circuit slave has no meter and no loadpoint assigned", err.Error())
+	suite.Require().NoError(err)
 }
 
 func (suite *circuitsTestSuite) TestMissingRootCircuit() {
@@ -147,7 +150,7 @@ loadpoints:
 	// mock charger
 	suite.Require().NoError(config.Chargers().Add(config.NewStaticDevice(config.Named{
 		Name: "test",
-	}, api.Charger(nil))))
+	}, suite.charger())))
 
 	err := configureLoadpoints(conf)
 	suite.Require().NoError(err)

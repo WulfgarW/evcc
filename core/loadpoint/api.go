@@ -26,8 +26,6 @@ type API interface {
 	// references
 	//
 
-	// TODO SetCircuitRef
-
 	// GetChargerRef returns the loadpoint charger
 	GetChargerRef() string
 	// SetChargerRef sets the loadpoint charger
@@ -36,8 +34,10 @@ type API interface {
 	GetMeterRef() string
 	// SetMeterRef sets the loadpoint meter
 	SetMeterRef(string)
-	// GetCircuitRef returns the loadpoint circuit name
+	// GetCircuitRef returns the loadpoint circuit
 	GetCircuitRef() string
+	// SetCircuitRef sets the loadpoint circuit
+	SetCircuitRef(string)
 	// GetCircuit returns the loadpoint circuit
 	GetCircuit() api.Circuit
 	// GetDefaultVehicleRef returns the loadpoint default vehicle
@@ -167,10 +167,14 @@ type API interface {
 	// smart grid charging
 	//
 
-	// GetSmartChargingActive determines if smart charging is active
+	// GetSmartCostLimit return the smart cost limit
 	GetSmartCostLimit() *float64
 	// SetSmartCostLimit sets the smart cost limit
 	SetSmartCostLimit(limit *float64)
+	// GetSmartFeedInPriorityLimit return the smart feed-in limit
+	GetSmartFeedInPriorityLimit() *float64
+	// SetSmartFeedInPriorityLimit sets the smart feed-in limit
+	SetSmartFeedInPriorityLimit(limit *float64)
 
 	//
 	// power and energy
