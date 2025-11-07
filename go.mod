@@ -8,8 +8,8 @@ require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/PuerkitoBio/goquery v1.10.3
-	github.com/WulfgarW/sensonet v0.0.5
-	github.com/WulfgarW/sensonetEbus v0.0.2
+	github.com/WulfgarW/sensonet v0.0.6
+	github.com/WulfgarW/sensonetEbus v0.0.4
 	github.com/andig/go-powerwall v0.2.1-0.20230808194509-dd70cdb6e140
 	github.com/andig/gosunspec v0.0.0-20240918203654-860ce51d602b
 	github.com/andig/mbserver v0.0.0-20230310211055-1d29cbb5820e

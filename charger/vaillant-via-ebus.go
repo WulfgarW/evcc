@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/WulfgarW/sensonetEbus"
@@ -81,7 +82,12 @@ func NewVaillantViaEbusFromConfig(ctx context.Context, other map[string]interfac
 		log.DEBUG.Printf("   CheckEbusdConfig() returned no error. Details: \n%s", details)
 		log.DEBUG.Println("   End of details")
 	} else {
-		log.ERROR.Printf("   CheckEbusdConfig() returned: Details: \n%s , (Last) Error: %s \n", details, err)
+		if strings.Contains(fmt.Sprint(err), "Some ebus read commands got") {
+			log.ERROR.Printf("   CheckEbusdConfig() returned: Details: \n%s , (Last) Error: %s \n", details, err)
+		} else {
+			log.WARN.Printf("   CheckEbusdConfig() returned: Details: \n%s , (Last) Error: %s \n This error will be ignord. \n", details, err)
+			err = nil
+		}
 	}
 
 	res := &VaillantViaEbus{

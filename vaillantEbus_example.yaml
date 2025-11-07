@@ -17,7 +17,7 @@ chargers:
   ebusdaddress: xxx.xxx.xxx.xxx:8888 # Hier die IP  und den Port angeben, unter dem ebusd erreichbar ist. 8888 ist der Default-Port
   heatingzone: 1 # Hier die Heizzone angeben, für die Quick-Vetos gestartet werden sollen. Default ist 0
   heatingtemperatureoffset: 2 # Hier angeben, wieviel Grad der Setpoint des Quick-Vetos über dem Temperature-Sollwert der Zone im Normalbetrieb liegen soll. Default ist 2
-  pvusestrategy: hotwater_then_heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
+  pvusestrategy: hotwater_then_heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_then_heating' 
   icon: heater
   heating: true 
   integrateddevice: true # Wenn man im laufenden evcc-Betrieb zwischen verschiedenen PV-Use-Strategien umschalten will, so ist dieser Parameter auszukommentieren
@@ -29,13 +29,13 @@ chargers:
 #  title: Vaillant  # Kann frei gewählt werden
 #  name: aroTHERM # Kann frei gewählt werden
 #  icon: heater
-#  pvusestrategy: hotwater_then_heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
+#  pvusestrategy: hotwater_then_heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_then_heating' 
 #- type: template
 #  template: vaillant-ebus_vehicle 
 #  title: VaillantHeating  # Kann frei gewählt werden
 #  name: aroTHERMHeating # Kann frei gewählt werden
 #  icon: heater
-#  pvusestrategy: heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_than_heating' 
+#  pvusestrategy: heating #Mögliche Werte: 'hotwater', 'heating', 'hotwater_then_heating' 
 
 
 loadpoints:

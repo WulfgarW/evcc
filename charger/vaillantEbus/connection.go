@@ -2,6 +2,7 @@ package vaillantEbus
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/evcc-io/evcc/api"
@@ -61,10 +62,15 @@ func NewConnection(ebusdAddress, pvUseStrategy string, heatingZone, phases int, 
 
 		details, err := ebusdConn.CheckEbusdConfig()
 		if err == nil {
-			log.DEBUG.Printf("   CheckEbusdConfig() returned no error. Details: \n%s", details)
+			log.DEBUG.Printf("   CheckEbusdConfig() returned no error. Details: \n%s \n", details)
 			log.DEBUG.Println("   End of details")
 		} else {
-			log.ERROR.Printf("   CheckEbusdConfig() returned: Details: \n%s , (Last) Error: %s \n", details, err)
+			if strings.Contains(fmt.Sprint(err), "Some ebus read commands got") {
+				log.ERROR.Printf("   CheckEbusdConfig() returned: Details: \n%s , (Last) Error: %s \n", details, err)
+			} else {
+				log.WARN.Printf("   CheckEbusdConfig() returned: Details: \n%s , (Last) Error: %s \n This error will be ignord. \n", details, err)
+				err = nil
+			}
 		}
 
 		return conn, err
