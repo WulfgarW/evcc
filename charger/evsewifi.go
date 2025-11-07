@@ -30,7 +30,7 @@ func init() {
 //go:generate go tool decorate -f decorateEVSE -b *EVSEWifi -r api.Charger -t "api.Meter,CurrentPower,func() (float64, error)" -t "api.MeterEnergy,TotalEnergy,func() (float64, error)" -t "api.PhaseCurrents,Currents,func() (float64, float64, float64, error)" -t "api.PhaseVoltages,Voltages,func() (float64, float64, float64, error)" -t "api.ChargerEx,MaxCurrentMillis,func(float64) error" -t "api.Identifier,Identify,func() (string, error)"
 
 // NewEVSEWifiFromConfig creates a EVSEWifi charger from generic config
-func NewEVSEWifiFromConfig(other map[string]interface{}) (api.Charger, error) {
+func NewEVSEWifiFromConfig(other map[string]any) (api.Charger, error) {
 	cc := struct {
 		URI   string
 		Meter struct {
@@ -47,13 +47,13 @@ func NewEVSEWifiFromConfig(other map[string]interface{}) (api.Charger, error) {
 
 	wb, err := NewEVSEWifi(util.DefaultScheme(cc.URI, "http"), cc.Cache)
 	if err != nil {
-		return wb, err
+		return nil, err
 	}
 
 	// auto-detect capabilities
 	params, err := wb.paramG.Get()
 	if err != nil {
-		return wb, err
+		return nil, err
 	}
 
 	if !params.AlwaysActive {

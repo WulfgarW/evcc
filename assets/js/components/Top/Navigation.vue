@@ -73,6 +73,12 @@
 					{{ $t("log.title") }}
 				</router-link>
 			</li>
+
+			<li v-if="optimizeAvailable">
+				<router-link class="dropdown-item" to="/optimize" active-class="active">
+					Optimize 🧪
+				</router-link>
+			</li>
 			<li><hr class="dropdown-divider" /></li>
 			<template v-if="providerLogins.length > 0">
 				<li>
@@ -134,7 +140,7 @@ import baseAPI from "./baseapi";
 import { isApp, sendToApp } from "@/utils/native";
 import { isUserConfigError } from "@/utils/fatal";
 import { defineComponent, type PropType } from "vue";
-import type { FatalError, Sponsor, AuthProviders } from "@/types/evcc";
+import type { FatalError, Sponsor, AuthProviders, EvOpt } from "@/types/evcc";
 import type { Provider as Provider } from "./types";
 
 export default defineComponent({
@@ -145,6 +151,7 @@ export default defineComponent({
 		sponsor: { type: Object as PropType<Sponsor>, default: () => ({}) },
 		forecast: Object,
 		battery: Array,
+		evopt: { type: Object as PropType<EvOpt>, required: false },
 		fatal: { type: Array as PropType<FatalError[]>, default: () => [] },
 	},
 	data() {
@@ -188,6 +195,9 @@ export default defineComponent({
 			const { grid, solar, co2 } = this.forecast || {};
 			return grid || solar || co2;
 		},
+		optimizeAvailable() {
+			return !!this.evopt && this.$hiddenFeatures();
+		},
 		showLogout() {
 			return isLoggedIn();
 		},
@@ -209,19 +219,32 @@ export default defineComponent({
 			const { title, authenticated, loginPath, logoutPath } = provider;
 			if (!authenticated) {
 				try {
-					const response = await baseAPI.get(loginPath);
-					window.location.href = response.data.loginUri;
+					const response = await baseAPI.get(loginPath, {
+						validateStatus: (code) => [200, 400].includes(code),
+					});
+					if (response.status === 200) {
+						window.location.href = response.data?.loginUri;
+					} else {
+						alert(`Failed to login: ${response.data?.error}`);
+					}
 				} catch (error: any) {
 					console.error(error);
-					alert(`Failed to login: ${error.response?.data}`);
+					alert("Unexpected login error: " + error.message);
 				}
 			} else {
 				if (window.confirm(this.$t("header.authProviders.confirmLogout", { title }))) {
 					try {
-						await baseAPI.get(logoutPath);
+						const response = await baseAPI.get(logoutPath, {
+							validateStatus: (code) => [200, 400, 500].includes(code),
+						});
+						if (response.status === 200) {
+							alert(this.$t("header.authProviders.loggedOut"));
+						} else {
+							alert(`Failed to logout: ${response.data?.error}`);
+						}
 					} catch (error: any) {
 						console.error(error);
-						alert(`Failed to logout: ${error.response?.data}`);
+						alert(`Unexpected logout error: ${error.response?.data}`);
 					}
 				}
 			}

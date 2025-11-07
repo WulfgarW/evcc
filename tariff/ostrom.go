@@ -57,7 +57,7 @@ func ensureContractEx(cid int64, contracts []ostrom.Contract) (ostrom.Contract, 
 	return zero, errors.New("cannot find contract")
 }
 
-func NewOstromFromConfig(other map[string]interface{}) (api.Tariff, error) {
+func NewOstromFromConfig(other map[string]any) (api.Tariff, error) {
 	var cc struct {
 		ClientId     string
 		ClientSecret string
@@ -110,9 +110,12 @@ func NewOstromFromConfig(other map[string]interface{}) (api.Tariff, error) {
 	} else {
 		go t.run(done)
 	}
-	err = <-done
 
-	return t, err
+	if err := <-done; err != nil {
+		return nil, err
+	}
+
+	return t, nil
 }
 
 func (t *Ostrom) getContracts() ([]ostrom.Contract, error) {

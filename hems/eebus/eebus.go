@@ -10,9 +10,9 @@ import (
 	"github.com/evcc-io/evcc/api"
 	"github.com/evcc-io/evcc/core/circuit"
 	"github.com/evcc-io/evcc/core/site"
+	"github.com/evcc-io/evcc/hems/shared"
 	"github.com/evcc-io/evcc/server/eebus"
 	"github.com/evcc-io/evcc/util"
-	"github.com/evcc-io/evcc/util/config"
 )
 
 type EEBus struct {
@@ -20,7 +20,9 @@ type EEBus struct {
 	log *util.Logger
 
 	*eebus.Connector
-	uc *eebus.UseCasesCS
+	cs *eebus.ControllableSystem
+	ma *eebus.MonitoringAppliance
+	eg *eebus.EnergyGuard
 
 	root api.Circuit
 
@@ -32,6 +34,7 @@ type EEBus struct {
 	failsafeDuration time.Duration
 
 	heartbeat *util.Value[struct{}]
+	interval  time.Duration
 }
 
 type Limits struct {
@@ -41,11 +44,12 @@ type Limits struct {
 	FailsafeDurationMinimum             time.Duration
 }
 
-// New creates an EEBus HEMS from generic config
-func New(ctx context.Context, other map[string]interface{}, site site.API) (*EEBus, error) {
+// NewFromConfig creates an EEBus HEMS from generic config
+func NewFromConfig(ctx context.Context, other map[string]any, site site.API) (*EEBus, error) {
 	cc := struct {
-		Ski    string
-		Limits `mapstructure:",squash"`
+		Ski      string
+		Limits   `mapstructure:",squash"`
+		Interval time.Duration
 	}{
 		Limits: Limits{
 			ContractualConsumptionNominalMax:    24800,
@@ -53,6 +57,7 @@ func New(ctx context.Context, other map[string]interface{}, site site.API) (*EEB
 			FailsafeConsumptionActivePowerLimit: 4200,
 			FailsafeDurationMinimum:             2 * time.Hour,
 		},
+		Interval: 10 * time.Second,
 	}
 
 	if err := util.DecodeOther(other, &cc); err != nil {
@@ -65,15 +70,10 @@ func New(ctx context.Context, other map[string]interface{}, site site.API) (*EEB
 		return nil, errors.New("hems requires load management- please configure root circuit")
 	}
 
-	// create new root circuit for LPC
-	lpc, err := circuit.New(util.NewLogger("lpc"), "eebus", 0, 0, nil, time.Minute)
+	// register LPC circuit if not already registered
+	lpc, err := shared.GetOrCreateCircuit("lpc", "eebus")
 	if err != nil {
 		return nil, err
-	}
-
-	// register LPC-Circuit for use in config, if not already registered
-	if _, err := config.Circuits().ByName("lpc"); err != nil {
-		_ = config.Circuits().Add(config.NewStaticDevice(config.Named{Name: "lpc"}, api.Circuit(lpc)))
 	}
 
 	// wrap old root with new pc parent
@@ -82,11 +82,11 @@ func New(ctx context.Context, other map[string]interface{}, site site.API) (*EEB
 	}
 	site.SetCircuit(lpc)
 
-	return NewEEBus(ctx, cc.Ski, cc.Limits, lpc)
+	return NewEEBus(ctx, cc.Ski, cc.Limits, lpc, cc.Interval)
 }
 
 // NewEEBus creates EEBus charger
-func NewEEBus(ctx context.Context, ski string, limits Limits, root api.Circuit) (*EEBus, error) {
+func NewEEBus(ctx context.Context, ski string, limits Limits, root api.Circuit, interval time.Duration) (*EEBus, error) {
 	if eebus.Instance == nil {
 		return nil, errors.New("eebus not configured")
 	}
@@ -94,9 +94,12 @@ func NewEEBus(ctx context.Context, ski string, limits Limits, root api.Circuit) 
 	c := &EEBus{
 		log:       util.NewLogger("eebus"),
 		root:      root,
-		uc:        eebus.Instance.ControllableSystem(),
+		cs:        eebus.Instance.ControllableSystem(),
+		ma:        eebus.Instance.MonitoringAppliance(),
+		eg:        eebus.Instance.EnergyGuard(),
 		Connector: eebus.NewConnector(),
 		heartbeat: util.NewValue[struct{}](2 * time.Minute), // LPC-031
+		interval:  interval,
 
 		consumptionLimit: &ucapi.LoadLimit{
 			Value:        limits.ConsumptionLimit,
@@ -120,36 +123,46 @@ func NewEEBus(ctx context.Context, ski string, limits Limits, root api.Circuit) 
 		return nil, err
 	}
 
-	// scenarios
-	for _, s := range c.uc.LPC.RemoteEntitiesScenarios() {
-		c.log.DEBUG.Println("LPC RemoteEntitiesScenarios:", s.Scenarios)
+	// controllable system
+	for _, s := range c.cs.CsLPCInterface.RemoteEntitiesScenarios() {
+		c.log.DEBUG.Println("CS LPC RemoteEntitiesScenarios:", s.Scenarios)
 	}
-	for _, s := range c.uc.LPP.RemoteEntitiesScenarios() {
-		c.log.DEBUG.Println("LPP RemoteEntitiesScenarios:", s.Scenarios)
+	for _, s := range c.cs.CsLPPInterface.RemoteEntitiesScenarios() {
+		c.log.DEBUG.Println("CS LPP RemoteEntitiesScenarios:", s.Scenarios)
 	}
-	for _, s := range c.uc.MGCP.RemoteEntitiesScenarios() {
-		c.log.DEBUG.Println("MGCP RemoteEntitiesScenarios:", s.Scenarios)
+
+	// monitoring appliance
+	for _, s := range c.ma.MaMPCInterface.RemoteEntitiesScenarios() {
+		c.log.DEBUG.Println("MA MPC RemoteEntitiesScenarios:", s.Scenarios)
+	}
+	for _, s := range c.ma.MaMGCPInterface.RemoteEntitiesScenarios() {
+		c.log.DEBUG.Println("MA MGCP RemoteEntitiesScenarios:", s.Scenarios)
+	}
+
+	// energy guard
+	for _, s := range c.eg.EgLPCInterface.RemoteEntitiesScenarios() {
+		c.log.DEBUG.Println("EG LPC RemoteEntitiesScenarios:", s.Scenarios)
 	}
 
 	// set initial values
-	if err := c.uc.LPC.SetConsumptionNominalMax(limits.ContractualConsumptionNominalMax); err != nil {
-		c.log.ERROR.Println("LPC SetConsumptionNominalMax:", err)
+	if err := c.cs.CsLPCInterface.SetConsumptionNominalMax(limits.ContractualConsumptionNominalMax); err != nil {
+		c.log.ERROR.Println("CS LPC SetConsumptionNominalMax:", err)
 	}
-	if err := c.uc.LPC.SetConsumptionLimit(*c.consumptionLimit); err != nil {
-		c.log.ERROR.Println("LPC SetConsumptionLimit:", err)
+	if err := c.cs.CsLPCInterface.SetConsumptionLimit(*c.consumptionLimit); err != nil {
+		c.log.ERROR.Println("CS LPC SetConsumptionLimit:", err)
 	}
-	if err := c.uc.LPC.SetFailsafeConsumptionActivePowerLimit(c.failsafeLimit, true); err != nil {
-		c.log.ERROR.Println("LPC SetFailsafeConsumptionActivePowerLimit:", err)
+	if err := c.cs.CsLPCInterface.SetFailsafeConsumptionActivePowerLimit(c.failsafeLimit, true); err != nil {
+		c.log.ERROR.Println("CS LPC SetFailsafeConsumptionActivePowerLimit:", err)
 	}
-	if err := c.uc.LPC.SetFailsafeDurationMinimum(c.failsafeDuration, true); err != nil {
-		c.log.ERROR.Println("LPC SetFailsafeDurationMinimum:", err)
+	if err := c.cs.CsLPCInterface.SetFailsafeDurationMinimum(c.failsafeDuration, true); err != nil {
+		c.log.ERROR.Println("CS LPC SetFailsafeDurationMinimum:", err)
 	}
 
 	return c, nil
 }
 
 func (c *EEBus) Run() {
-	for range time.Tick(10 * time.Second) {
+	for range time.Tick(c.interval) {
 		if err := c.run(); err != nil {
 			c.log.ERROR.Println(err)
 		}
@@ -223,5 +236,6 @@ func (c *EEBus) setStatusAndLimit(status status, limit float64) {
 }
 
 func (c *EEBus) setLimit(limit float64) {
+	c.root.Dim(limit > 0)
 	c.root.SetMaxPower(limit)
 }

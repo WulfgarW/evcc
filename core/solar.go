@@ -1,12 +1,21 @@
 package core
 
 import (
+	"encoding/json"
 	"slices"
 	"time"
 
 	"github.com/evcc-io/evcc/api"
 	"github.com/samber/lo"
 )
+
+type timeseries []tsEntry
+
+var _ api.BytesMarshaler = (*timeseries)(nil)
+
+func (ts timeseries) MarshalBytes() ([]byte, error) {
+	return json.Marshal(ts)
+}
 
 type tsEntry struct {
 	Timestamp time.Time `json:"ts"`
@@ -37,6 +46,10 @@ func interpolate(rr api.Rates, i int, ts time.Time) float64 {
 // Result is in Wh
 func solarEnergy(rr api.Rates, from, to time.Time) float64 {
 	var energy float64
+
+	if from.After(to) {
+		panic("from cannot be after to")
+	}
 
 	idx, ok := search(rr, from)
 	if !ok {

@@ -7,7 +7,10 @@
 				<ExperimentalBanner v-else-if="$hiddenFeatures()" />
 
 				<h2 class="my-4 mt-5">{{ $t("config.section.general") }}</h2>
-				<GeneralConfig @site-changed="siteChanged" />
+				<GeneralConfig
+					:sponsor-error="hasClassError('sponsorship')"
+					@site-changed="siteChanged"
+				/>
 
 				<div v-if="$hiddenFeatures()">
 					<h2 class="my-4">{{ $t("config.section.loadpoints") }} 🧪</h2>
@@ -77,22 +80,15 @@
 
 					<h2 class="my-4 mt-5">{{ $t("config.section.grid") }} 🧪</h2>
 					<div class="p-0 config-list">
-						<DeviceCard
+						<MeterCard
 							v-if="gridMeter"
+							:meter="gridMeter"
 							:title="$t('config.grid.title')"
-							:name="gridMeter.name"
-							:editable="!!gridMeter.id"
-							:error="hasDeviceError('meter', gridMeter.name)"
-							data-testid="grid"
-							@edit="editMeter('grid', gridMeter.id)"
-						>
-							<template #icon>
-								<shopicon-regular-powersupply></shopicon-regular-powersupply>
-							</template>
-							<template #tags>
-								<DeviceTags :tags="deviceTags('meter', gridMeter.name)" />
-							</template>
-						</DeviceCard>
+							meter-type="grid"
+							:has-error="hasDeviceError('meter', gridMeter.name)"
+							:tags="deviceTags('meter', gridMeter.name)"
+							@edit="editMeter"
+						/>
 						<NewDeviceButton
 							v-else
 							:title="$t('config.main.addGrid')"
@@ -123,48 +119,24 @@
 					</div>
 					<h2 class="my-4 mt-5">{{ $t("config.section.meter") }} 🧪</h2>
 					<div class="p-0 config-list">
-						<DeviceCard
+						<MeterCard
 							v-for="meter in pvMeters"
 							:key="meter.name"
-							:title="
-								meter.deviceTitle ||
-								meter.config?.template ||
-								$t('config.devices.solarSystem')
-							"
-							:name="meter.name"
-							:editable="!!meter.id"
-							:error="hasDeviceError('meter', meter.name)"
-							data-testid="pv"
-							@edit="editMeter('pv', meter.id)"
-						>
-							<template #icon>
-								<shopicon-regular-sun></shopicon-regular-sun>
-							</template>
-							<template #tags>
-								<DeviceTags :tags="deviceTags('meter', meter.name)" />
-							</template>
-						</DeviceCard>
-						<DeviceCard
+							:meter="meter"
+							meter-type="pv"
+							:has-error="hasDeviceError('meter', meter.name)"
+							:tags="deviceTags('meter', meter.name)"
+							@edit="editMeter"
+						/>
+						<MeterCard
 							v-for="meter in batteryMeters"
 							:key="meter.name"
-							:title="
-								meter.deviceTitle ||
-								meter.config?.template ||
-								$t('config.devices.batteryStorage')
-							"
-							:name="meter.name"
-							:editable="!!meter.id"
-							:error="hasDeviceError('meter', meter.name)"
-							data-testid="battery"
-							@edit="editMeter('battery', meter.id)"
-						>
-							<template #icon>
-								<shopicon-regular-batterythreequarters></shopicon-regular-batterythreequarters>
-							</template>
-							<template #tags>
-								<DeviceTags :tags="deviceTags('meter', meter.name)" />
-							</template>
-						</DeviceCard>
+							:meter="meter"
+							meter-type="battery"
+							:has-error="hasDeviceError('meter', meter.name)"
+							:tags="deviceTags('meter', meter.name)"
+							@edit="editMeter"
+						/>
 						<NewDeviceButton
 							:title="$t('config.main.addPvBattery')"
 							@click="addSolarBatteryMeter"
@@ -173,27 +145,24 @@
 
 					<h2 class="my-4 mt-5">{{ $t("config.section.additionalMeter") }} 🧪</h2>
 					<div class="p-0 config-list">
-						<DeviceCard
+						<MeterCard
 							v-for="meter in auxMeters"
 							:key="meter.name"
-							:title="
-								meter.deviceTitle ||
-								meter.config?.template ||
-								$t('config.devices.auxMeter')
-							"
-							:name="meter.name"
-							:editable="!!meter.id"
-							:error="hasDeviceError('meter', meter.name)"
-							data-testid="aux"
-							@edit="editMeter('aux', meter.id)"
-						>
-							<template #icon>
-								<VehicleIcon :name="meter.deviceIcon || 'smartconsumer'" />
-							</template>
-							<template #tags>
-								<DeviceTags :tags="deviceTags('meter', meter.name)" />
-							</template>
-						</DeviceCard>
+							:meter="meter"
+							meter-type="aux"
+							:has-error="hasDeviceError('meter', meter.name)"
+							:tags="deviceTags('meter', meter.name)"
+							@edit="editMeter"
+						/>
+						<MeterCard
+							v-for="meter in extMeters"
+							:key="meter.name"
+							:meter="meter"
+							meter-type="ext"
+							:has-error="hasDeviceError('meter', meter.name)"
+							:tags="deviceTags('meter', meter.name)"
+							@edit="editMeter"
+						/>
 						<NewDeviceButton
 							:title="$t('config.main.addAdditional')"
 							@click="newAdditionalMeter"
@@ -262,11 +231,11 @@
 							<template #icon><CircuitsIcon /></template>
 							<template #tags>
 								<DeviceTags
-									v-if="circuits.length == 0"
+									v-if="circuitsSorted.length == 0"
 									:tags="{ configured: { value: false } }"
 								/>
 								<template
-									v-for="(circuit, idx) in circuits"
+									v-for="(circuit, idx) in circuitsSorted"
 									v-else
 									:key="circuit.name"
 								>
@@ -292,6 +261,18 @@
 							</template>
 						</DeviceCard>
 						<DeviceCard
+							:title="$t('config.shm.cardTitle')"
+							editable
+							:error="hasClassError('shm')"
+							data-testid="shm"
+							@edit="openModal('shmModal')"
+						>
+							<template #icon><ShmIcon /></template>
+							<template #tags>
+								<DeviceTags :tags="shmTags" />
+							</template>
+						</DeviceCard>
+						<DeviceCard
 							:title="$t('config.hems.title')"
 							editable
 							:error="hasClassError('hems')"
@@ -313,6 +294,9 @@
 					<router-link to="/log" class="btn btn-outline-secondary">
 						{{ $t("config.system.logs") }}
 					</router-link>
+					<router-link to="/issue" class="btn btn-outline-secondary">
+						{{ $t("help.issueButton") }}
+					</router-link>
 					<button
 						class="btn btn-outline-secondary text-truncate"
 						@click="openModal('backupRestoreModal')"
@@ -333,20 +317,24 @@
 					:chargerValues="deviceValues['charger']"
 					:meters="meters"
 					:circuits="circuits"
-					:fade="loadpointSubModalOpen ? 'left' : ''"
+					:fade="loadpointSubModalOpen ? 'left' : undefined"
 					:hasDeviceError="hasDeviceError"
 					@updated="loadpointChanged"
 					@open-charger-modal="editLoadpointCharger"
 					@open-meter-modal="editLoadpointMeter"
 					@opened="loadpointSubModalOpen = false"
 				/>
-				<VehicleModal :id="selectedVehicleId" @vehicle-changed="vehicleChanged" />
+				<VehicleModal
+					:id="selectedVehicleId"
+					:is-sponsor="isSponsor"
+					@vehicle-changed="vehicleChanged"
+				/>
 				<MeterModal
 					:id="selectedMeterId"
-					:name="selectedMeterName"
 					:type="selectedMeterType"
 					:typeChoices="selectedMeterTypeChoices"
-					:fade="loadpointSubModalOpen ? 'right' : ''"
+					:fade="loadpointSubModalOpen ? 'right' : undefined"
+					:is-sponsor="isSponsor"
 					@added="meterAdded"
 					@updated="meterChanged"
 					@removed="meterRemoved"
@@ -354,10 +342,9 @@
 				/>
 				<ChargerModal
 					:id="selectedChargerId"
-					:name="selectedChargerName"
 					:loadpointType="selectedLoadpointType"
-					:fade="loadpointSubModalOpen ? 'right' : ''"
-					:isSponsor="isSponsor"
+					:fade="loadpointSubModalOpen ? 'right' : undefined"
+					:is-sponsor="isSponsor"
 					@added="chargerAdded"
 					@updated="chargerChanged"
 					@removed="chargerRemoved"
@@ -367,12 +354,18 @@
 				<MqttModal @changed="loadDirty" />
 				<NetworkModal @changed="loadDirty" />
 				<ControlModal @changed="loadDirty" />
-				<SponsorModal @changed="loadDirty" />
+				<SponsorModal :error="hasClassError('sponsorship')" @changed="loadDirty" />
 				<HemsModal @changed="yamlChanged" />
+				<ShmModal @changed="loadDirty" />
 				<MessagingModal @changed="yamlChanged" />
 				<TariffsModal @changed="yamlChanged" />
+				<TelemetryModal :sponsor="sponsor" :telemetry="telemetry" />
 				<ModbusProxyModal @changed="yamlChanged" />
-				<CircuitsModal @changed="yamlChanged" />
+				<CircuitsModal
+					:gridMeter="gridMeter"
+					:extMeters="extMeters"
+					@changed="yamlChanged"
+				/>
 				<EebusModal @changed="yamlChanged" />
 				<BackupRestoreModal v-bind="backupRestoreProps" />
 				<PasswordModal update-mode />
@@ -401,12 +394,15 @@ import formatter from "../mixins/formatter";
 import GeneralConfig from "../components/Config/GeneralConfig.vue";
 import HemsIcon from "../components/MaterialIcon/Hems.vue";
 import HemsModal from "../components/Config/HemsModal.vue";
+import ShmIcon from "../components/MaterialIcon/Shm.vue";
+import ShmModal from "@/components/Config/ShmModal.vue";
 import InfluxIcon from "../components/MaterialIcon/Influx.vue";
 import InfluxModal from "../components/Config/InfluxModal.vue";
 import LoadpointModal from "../components/Config/LoadpointModal.vue";
 import LoadpointIcon from "../components/MaterialIcon/Loadpoint.vue";
 import MessagingModal from "../components/Config/MessagingModal.vue";
 import MeterModal from "../components/Config/MeterModal.vue";
+import MeterCard from "../components/Config/MeterCard.vue";
 import Modal from "bootstrap/js/dist/modal";
 import ModbusProxyIcon from "../components/MaterialIcon/ModbusProxy.vue";
 import ModbusProxyModal from "../components/Config/ModbusProxyModal.vue";
@@ -418,11 +414,13 @@ import restart, { performRestart } from "../restart";
 import SponsorModal from "../components/Config/SponsorModal.vue";
 import store from "../store";
 import TariffsModal from "../components/Config/TariffsModal.vue";
+import TelemetryModal from "../components/Config/TelemetryModal.vue";
 import Header from "../components/Top/Header.vue";
 import VehicleIcon from "../components/VehicleIcon";
 import VehicleModal from "../components/Config/VehicleModal.vue";
 import { defineComponent } from "vue";
 import type {
+	Circuit,
 	ConfigCharger,
 	ConfigVehicle,
 	ConfigCircuit,
@@ -430,7 +428,7 @@ import type {
 	ConfigMeter,
 	LoadpointType,
 	Timeout,
-	SelectedMeterType,
+	MeterType,
 	SiteConfig,
 	DeviceType,
 } from "@/types/evcc";
@@ -458,10 +456,13 @@ export default defineComponent({
 		GeneralConfig,
 		HemsIcon,
 		HemsModal,
+		ShmModal,
+		ShmIcon,
 		InfluxIcon,
 		InfluxModal,
 		MessagingModal,
 		MeterModal,
+		MeterCard,
 		LoadpointModal,
 		LoadpointIcon,
 		ModbusProxyIcon,
@@ -472,6 +473,7 @@ export default defineComponent({
 		NotificationIcon,
 		SponsorModal,
 		TariffsModal,
+		TelemetryModal,
 		TopHeader: Header,
 		VehicleIcon,
 		VehicleModal,
@@ -492,8 +494,8 @@ export default defineComponent({
 			circuits: [] as ConfigCircuit[],
 			selectedVehicleId: undefined as number | undefined,
 			selectedMeterId: undefined as number | undefined,
-			selectedMeterType: undefined as SelectedMeterType | undefined,
-			selectedMeterTypeChoices: [] as string[],
+			selectedMeterType: undefined as MeterType | undefined,
+			selectedMeterTypeChoices: [] as MeterType[],
 			selectedChargerId: undefined as number | undefined,
 			selectedLoadpointId: undefined as number | undefined,
 			selectedLoadpointType: undefined as LoadpointType | undefined,
@@ -606,18 +608,39 @@ export default defineComponent({
 		vehicleOptions() {
 			return this.vehicles.map((v) => ({ key: v.name, name: v.config?.title || v.name }));
 		},
+		shmTags() {
+			return { configured: { value: true } };
+		},
 		hemsTags() {
-			const result = { configured: { value: false }, hemsType: {} };
 			const { type } = store.state?.hems || {};
-			if (type) {
-				result.configured.value = true;
+			if (!type) {
+				return { configured: { value: false } };
+			}
+			const result = {
+				hemsType: {},
+				hemsActiveLimit: { value: null as number | null },
+			};
+			if (["relay", "eebus"].includes(type)) {
 				result.hemsType = { value: type };
 			}
+			const lpc = store.state?.circuits?.["lpc"];
+			if (lpc) {
+				const value = lpc.maxPower || null;
+				result.hemsActiveLimit = { value };
+			}
+
 			return result;
 		},
 		isSponsor() {
 			const { name } = store.state?.sponsor || {};
 			return !!name;
+		},
+		sponsor() {
+			return store.state?.sponsor;
+		},
+		telemetry() {
+			// @ts-expect-error: telemetry property exists but not in TypeScript definitions
+			return store.state?.telemetry === true;
 		},
 		eebusTags() {
 			return { configured: { value: store.state?.eebus || false } };
@@ -636,6 +659,12 @@ export default defineComponent({
 			return {
 				authDisabled: store.state?.authDisabled || false,
 			};
+		},
+		circuitsSorted() {
+			const sortedNames = Object.keys(store.state?.circuits || {});
+			return [...this.circuits].sort(
+				(a, b) => sortedNames.indexOf(a.name) - sortedNames.indexOf(b.name)
+			);
 		},
 	},
 	watch: {
@@ -697,7 +726,15 @@ export default defineComponent({
 		},
 		async loadCircuits() {
 			const response = await api.get("/config/devices/circuit");
-			this.circuits = response.data || [];
+			const circuits = response.data || [];
+			// set lpc default title
+			circuits.forEach((c: ConfigCircuit) => {
+				if (c.name === "lpc" && !c.config?.title) {
+					c.config = c.config || {};
+					c.config.title = this.$t("config.hems.title");
+				}
+			});
+			this.circuits = circuits;
 		},
 		async loadSite() {
 			const response = await api.get("/config/site", {
@@ -769,12 +806,12 @@ export default defineComponent({
 			this.loadpointModal().hide();
 			this.$nextTick(() => this.editMeter("charge", meter?.id));
 		},
-		editMeter(type: SelectedMeterType, id?: number) {
+		editMeter(type: MeterType, id?: number) {
 			this.selectedMeterType = type;
 			this.selectedMeterId = id;
 			this.$nextTick(() => this.meterModal().show());
 		},
-		newMeter(type: SelectedMeterType) {
+		newMeter(type: MeterType) {
 			this.selectedMeterId = undefined;
 			this.selectedMeterType = type;
 			this.$nextTick(() => this.meterModal().show());
@@ -782,13 +819,13 @@ export default defineComponent({
 		addSolarBatteryMeter() {
 			this.selectedMeterId = undefined;
 			this.selectedMeterType = undefined;
-			this.selectedMeterTypeChoices = ["pv", "battery"];
+			this.selectedMeterTypeChoices = ["pv", "battery"] as MeterType[];
 			this.$nextTick(() => this.meterModal().show());
 		},
 		newAdditionalMeter() {
 			this.selectedMeterId = undefined;
 			this.selectedMeterType = undefined;
-			this.selectedMeterTypeChoices = ["aux", "ext"];
+			this.selectedMeterTypeChoices = ["aux", "ext"] as MeterType[];
 			this.$nextTick(() => this.meterModal().show());
 		},
 		editCharger(id?: number, loadpointType?: LoadpointType) {
@@ -843,7 +880,7 @@ export default defineComponent({
 		yamlChanged() {
 			this.loadDirty();
 		},
-		meterAdded(type: SelectedMeterType, name: string) {
+		meterAdded(type: MeterType, name: string) {
 			if (type === "charge") {
 				// update loadpoint
 				(
@@ -877,7 +914,7 @@ export default defineComponent({
 			}
 			this.meterChanged();
 		},
-		meterRemoved(type: SelectedMeterType) {
+		meterRemoved(type: MeterType) {
 			if (type === "charge") {
 				// update loadpoint
 				(
@@ -977,7 +1014,8 @@ export default defineComponent({
 		},
 		circuitTags(circuit: ConfigCircuit) {
 			const circuits = store.state?.circuits || {};
-			const data = circuits[circuit.name] || {};
+			const data =
+				(circuits[circuit.name] as Circuit | undefined) || ({} as Partial<Circuit>);
 			const result: Record<string, object> = {};
 			const p = data.power || 0;
 			if (data.maxPower) {
