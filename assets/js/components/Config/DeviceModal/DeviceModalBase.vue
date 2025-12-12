@@ -8,6 +8,7 @@
 		:size="modalSize"
 		@open="handleOpen"
 		@close="handleClose"
+		@visibilitychange="handleVisibilityChange"
 	>
 		<form ref="form" class="container mx-0 px-0">
 			<slot name="pre-content" :values="values"></slot>
@@ -44,46 +45,102 @@
 					<SponsorTokenRequired v-if="sponsorTokenRequired" />
 					<Markdown v-if="description" :markdown="description" class="my-4" />
 
-					<slot name="after-template-info" :values="values"></slot>
+					<div v-if="authRequired">
+						<PropertyEntry
+							v-for="param in authParams"
+							:id="`${deviceType}Param${param.Name}`"
+							:key="param.Name"
+							v-bind="param"
+							v-model="values[param.Name]"
+							:service-values="serviceValues[param.Name]"
+						/>
 
-					<Modbus
-						v-if="modbus"
-						v-model:modbus="values['modbus']"
-						v-model:id="values['id']"
-						v-model:host="values['host']"
-						v-model:port="values['port']"
-						v-model:device="values['device']"
-						v-model:baudrate="values['baudrate']"
-						v-model:comset="values['comset']"
-						:defaultId="modbus.ID ? Number(modbus.ID) : undefined"
-						:defaultComset="modbus.Comset"
-						:defaultBaudrate="modbus.Baudrate"
-						:defaultPort="modbus.Port"
-						:capabilities="modbusCapabilities"
-					/>
-
-					<PropertyEntry
-						v-for="param in normalParams"
-						:id="`${deviceType}Param${param.Name}`"
-						:key="param.Name"
-						v-bind="param"
-						v-model="values[param.Name]"
-					/>
-
-					<PropertyCollapsible>
-						<template v-if="advancedParams.length" #advanced>
-							<PropertyEntry
-								v-for="param in advancedParams"
-								:id="`${deviceType}Param${param.Name}`"
-								:key="param.Name"
-								v-bind="param"
-								v-model="values[param.Name]"
+						<div v-if="auth.code">
+							<hr class="my-5" />
+							<AuthCodeDisplay
+								:id="`${deviceType}AuthCode`"
+								:code="auth.code"
+								:expiry="auth.expiry"
 							/>
-						</template>
-						<template v-if="$slots['collapsible-more']" #more>
-							<slot name="collapsible-more" :values="values"></slot>
-						</template>
-					</PropertyCollapsible>
+						</div>
+
+						<p v-if="auth.error" class="text-danger">{{ auth.error }}</p>
+
+						<div
+							class="my-4 d-flex align-items-stretch justify-content-sm-between align-items-sm-baseline flex-column-reverse flex-sm-row gap-2"
+						>
+							<!-- delete / cancel -->
+							<button
+								v-if="isDeletable"
+								type="button"
+								class="btn btn-link text-danger align-self-start"
+								tabindex="0"
+								@click.prevent="handleRemove"
+							>
+								{{ $t("config.general.delete") }}
+							</button>
+							<button
+								v-else
+								type="button"
+								class="btn btn-link text-muted align-self-start"
+								data-bs-dismiss="modal"
+								tabindex="0"
+							>
+								{{ $t("config.general.cancel") }}
+							</button>
+							<!-- perform auth -->
+							<AuthConnectButton
+								:provider-url="auth.providerUrl ?? undefined"
+								:loading="auth.loading"
+								@prepare="checkAuthStatus"
+							/>
+						</div>
+					</div>
+					<div v-else>
+						<slot name="after-template-info" :values="values"></slot>
+
+						<Modbus
+							v-if="modbus"
+							v-model:modbus="values['modbus']"
+							v-model:id="values['id']"
+							v-model:host="values['host']"
+							v-model:port="values['port']"
+							v-model:device="values['device']"
+							v-model:baudrate="values['baudrate']"
+							v-model:comset="values['comset']"
+							component-id="device"
+							:defaultId="modbus.ID ? Number(modbus.ID) : undefined"
+							:defaultComset="modbus.Comset"
+							:defaultBaudrate="modbus.Baudrate"
+							:defaultPort="modbus.Port"
+							:capabilities="modbusCapabilities"
+						/>
+
+						<PropertyEntry
+							v-for="param in normalParams"
+							:id="`${deviceType}Param${param.Name}`"
+							:key="param.Name"
+							v-bind="param"
+							v-model="values[param.Name]"
+							:service-values="serviceValues[param.Name]"
+						/>
+
+						<PropertyCollapsible>
+							<template v-if="advancedParams.length" #advanced>
+								<PropertyEntry
+									v-for="param in advancedParams"
+									:id="`${deviceType}Param${param.Name}`"
+									:key="param.Name"
+									v-bind="param"
+									v-model="values[param.Name]"
+									:service-values="serviceValues[param.Name]"
+								/>
+							</template>
+							<template v-if="$slots['collapsible-more']" #more>
+								<slot name="collapsible-more" :values="values"></slot>
+							</template>
+						</PropertyCollapsible>
+					</div>
 				</div>
 
 				<DeviceModalActions
@@ -114,10 +171,13 @@ import Markdown from "../Markdown.vue";
 import SponsorTokenRequired from "./SponsorTokenRequired.vue";
 import TemplateSelector, { type TemplateGroup } from "./TemplateSelector.vue";
 import YamlEntry from "./YamlEntry.vue";
+import AuthCodeDisplay from "../AuthCodeDisplay.vue";
+import AuthConnectButton from "../AuthConnectButton.vue";
 import { initialTestState, performTest } from "../utils/test";
+import { initialAuthState, prepareAuthLogin } from "../utils/authProvider";
 import sleep from "@/utils/sleep";
 import { ConfigType } from "@/types/evcc";
-import type { DeviceType } from "@/types/evcc";
+import type { DeviceType, Timeout } from "@/types/evcc";
 import {
 	handleError,
 	type DeviceValues,
@@ -129,7 +189,9 @@ import {
 	type ApiData,
 	applyDefaultsFromTemplate,
 	createDeviceUtils,
+	fetchServiceValues,
 } from "./index";
+import deepEqual from "@/utils/deepEqual";
 
 const CUSTOM_FIELDS = ["modbus"];
 
@@ -145,6 +207,8 @@ export default defineComponent({
 		SponsorTokenRequired,
 		TemplateSelector,
 		YamlEntry,
+		AuthCodeDisplay,
+		AuthConnectButton,
 	},
 	props: {
 		deviceType: { type: String as PropType<DeviceType>, required: true },
@@ -197,10 +261,13 @@ export default defineComponent({
 			templateName: null as string | null,
 			template: null as Template | null,
 			saving: false,
+			auth: initialAuthState(),
 			succeeded: false,
 			loadingTemplate: false,
 			values: { ...this.initialValues } as DeviceValues,
 			test: initialTestState(),
+			serviceValues: {} as Record<string, string[]>,
+			serviceValuesTimer: null as Timeout | null,
 		};
 	},
 	computed: {
@@ -230,6 +297,10 @@ export default defineComponent({
 			}
 
 			return filtered;
+		},
+		authParams() {
+			const { params = [] } = this.template?.Auth ?? {};
+			return this.templateParams.filter((p) => params.includes(p.Name));
 		},
 		normalParams() {
 			return this.templateParams.filter((p) => !p.Advanced && !p.Deprecated);
@@ -296,7 +367,7 @@ export default defineComponent({
 			return !this.isNew;
 		},
 		showActions() {
-			return this.templateName || this.showYamlInput;
+			return (this.templateName && !this.authRequired) || this.showYamlInput;
 		},
 		showYamlInput() {
 			return this.isYamlInputTypeByValue(this.values.type);
@@ -306,6 +377,23 @@ export default defineComponent({
 		},
 		showDeprecatedWarning() {
 			return this.isTypeDeprecated && this.isTypeDeprecated(this.values.type);
+		},
+		authRequired() {
+			return this.template?.Auth && !this.auth.ok;
+		},
+		authValuesMissing() {
+			console.log("authValuesMissing", this.authValues);
+			return this.template?.Auth && Object.values(this.authValues).some((value) => !value);
+		},
+		authValues() {
+			const params = this.template?.Auth?.params ?? [];
+			return params.reduce(
+				(acc, param) => {
+					acc[param] = this.values[param];
+					return acc;
+				},
+				{} as Record<string, any>
+			);
 		},
 	},
 	watch: {
@@ -353,6 +441,8 @@ export default defineComponent({
 			if (!isYamlInput) {
 				this.loadTemplate();
 			}
+
+			this.updateServiceValues();
 		},
 		usage() {
 			// Reload products when usage changes (e.g., meter type selection)
@@ -376,6 +466,30 @@ export default defineComponent({
 		values: {
 			handler() {
 				this.test = initialTestState();
+				this.updateServiceValues();
+			},
+			deep: true,
+		},
+		authValues: {
+			handler() {
+				if (this.authRequired) {
+					this.resetAuthStatus();
+				}
+			},
+			deep: true,
+		},
+		authRequired() {
+			// update on auth state change
+			this.updateServiceValues();
+		},
+		serviceValues: {
+			handler(newValue, oldValue) {
+				// Apply defaults only for specific params whose service values changed
+				Object.keys(newValue).forEach((paramName) => {
+					if (!deepEqual(newValue[paramName], oldValue[paramName])) {
+						this.applyServiceDefault(paramName);
+					}
+				});
 			},
 			deep: true,
 		},
@@ -384,6 +498,7 @@ export default defineComponent({
 		reset() {
 			this.values = { ...this.initialValues } as DeviceValues;
 			this.test = initialTestState();
+			this.resetAuthStatus();
 		},
 		async loadConfiguration() {
 			try {
@@ -406,6 +521,7 @@ export default defineComponent({
 				if (this.onConfigurationLoaded) {
 					this.onConfigurationLoaded(this.values);
 				}
+				this.checkAuthStatus();
 			} catch (e) {
 				console.error(e);
 			}
@@ -438,10 +554,49 @@ export default defineComponent({
 					this.$i18n?.locale
 				);
 				this.applyDefaults();
+				this.checkAuthStatus();
 			} catch (e) {
 				console.error(e);
 			}
 			this.loadingTemplate = false;
+		},
+		resetAuthStatus() {
+			this.auth = initialAuthState();
+		},
+		async checkAuthStatus() {
+			this.resetAuthStatus();
+
+			// no auth required
+			if (!this.template?.Auth) return;
+
+			// trigger browser validation
+			if (this.$refs["form"]) {
+				if (!(this.$refs["form"] as HTMLFormElement).reportValidity()) {
+					return;
+				}
+			}
+
+			// validate data
+			if (this.authValuesMissing) return;
+
+			const { type } = this.template.Auth;
+			const values = this.authValues;
+			this.auth.loading = true;
+			const result = await this.device.checkAuth(type, values);
+			this.auth.loading = false;
+			if (result.success) {
+				// login already exists
+				this.auth.error = null;
+				this.auth.ok = true;
+			} else if (result.authId) {
+				await this.prepareAuthLogin(result.authId);
+			} else {
+				// something else failed
+				this.auth.error = result.error ?? "unknown error";
+			}
+		},
+		async prepareAuthLogin(authId: string) {
+			await prepareAuthLogin(this.auth, authId);
 		},
 		async create(force = false) {
 			if (this.test.isUnknown && !force) {
@@ -542,11 +697,31 @@ export default defineComponent({
 		handleRemove() {
 			this.remove();
 		},
+		handleVisibilityChange() {
+			this.checkAuthStatus();
+		},
 		isYamlInputTypeByValue(value: ConfigType): boolean {
 			if (this.isYamlInputType) {
 				return this.isYamlInputType(value);
 			}
 			return value === ConfigType.Custom;
+		},
+		async updateServiceValues() {
+			if (this.serviceValuesTimer) {
+				clearTimeout(this.serviceValuesTimer);
+			}
+			this.serviceValuesTimer = setTimeout(async () => {
+				this.serviceValues = await fetchServiceValues(this.templateParams, this.values);
+			}, 500);
+		},
+		applyServiceDefault(paramName: string) {
+			// Auto-apply single service value when field is empty and required
+			const values = this.serviceValues[paramName];
+			const param = this.templateParams.find((p) => p.Name === paramName);
+			// Only auto-apply if exactly one value is returned, field is empty, and field is required
+			if (values?.length === 1 && !this.values[paramName] && param?.Required) {
+				this.values[paramName] = values[0];
+			}
 		},
 	},
 });

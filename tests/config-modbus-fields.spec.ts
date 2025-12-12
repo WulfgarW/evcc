@@ -32,7 +32,7 @@ test.describe("modbus fields", async () => {
     const modal = await openMeterModal(page, "TCP Test");
     await expect(page.getByLabel("Network")).toBeChecked();
     await expect(page.getByLabel("TCP")).toBeChecked();
-    await expect(modal.getByLabel("IP address or hostname")).toHaveValue("192.168.1.10");
+    await expect(modal.getByLabel("IP address or hostname")).toHaveValue("192.0.2.1");
     await expect(modal.getByLabel("Port", { exact: true })).toHaveValue("5020");
     await expect(modal.getByLabel("Modbus ID")).toHaveValue("10");
   });
@@ -41,14 +41,14 @@ test.describe("modbus fields", async () => {
     const modal = await openMeterModal(page, "RTU/IP Test");
     await expect(page.getByLabel("Network")).toBeChecked();
     await expect(page.getByLabel("RTU")).toBeChecked();
-    await expect(modal.getByLabel("IP address or hostname")).toHaveValue("192.168.1.20");
+    await expect(modal.getByLabel("IP address or hostname")).toHaveValue("198.51.100.1");
     await expect(modal.getByLabel("Port", { exact: true })).toHaveValue("8899");
     await expect(modal.getByLabel("Modbus ID")).toHaveValue("20");
   });
 
   test("rs485serial", async ({ page }) => {
     const modal = await openMeterModal(page, "Serial Test");
-    await expect(page.getByLabel("Serial / USB")).toBeChecked();
+    await expect(page.getByLabel("RS485")).toBeChecked();
     await expect(modal.getByLabel("Device name")).toHaveValue("/dev/ttyUSB5");
     await expect(modal.getByLabel("Baud rate")).toHaveValue("19200");
     await expect(modal.getByLabel("ComSet")).toHaveValue("8E1");
