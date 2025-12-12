@@ -98,5 +98,6 @@ func (v *VaillantEbus_vehicle) GetLimitSoc() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	err = v.conn.CheckPVUseStrategy(v.PvUseStrategy)
 	return tt, err
 }

@@ -59,6 +59,7 @@ func (sh *Switch) Enable(enable bool) error {
 	}
 	heatingPar.VetoDuration = -1.0 //negative value means: use default
 	if enable {
+		d.log.DEBUG.Println("In Switch.Enable: PVUseStrategy= ", d.pvUseStrategy, ", converted to ", PVUseStrategyToSensonetEbusStrategy(d.pvUseStrategy), "for sensonetEbus.")
 		result, err := d.ebusdConn.StartStrategybased(PVUseStrategyToSensonetEbusStrategy(d.pvUseStrategy), &heatingPar)
 		if err != nil {
 			err = fmt.Errorf("error return from StartStrategybased: %s", err)

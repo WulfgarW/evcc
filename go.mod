@@ -8,8 +8,8 @@ require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/PuerkitoBio/goquery v1.10.3
-	github.com/WulfgarW/sensonet v0.0.6
-	github.com/WulfgarW/sensonetEbus v0.0.4
+	github.com/WulfgarW/sensonet v0.0.7
+	github.com/WulfgarW/sensonetEbus v0.0.5
 	github.com/andig/evopt v0.0.0-20251030151600-82023795e6f5
 	github.com/andig/go-powerwall v0.2.1-0.20230808194509-dd70cdb6e140
 	github.com/andig/gosunspec v0.0.0-20240918203654-860ce51d602b
@@ -235,7 +235,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/mod v0.29.0 // indirect
-	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/term v0.36.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b // indirect
 	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
