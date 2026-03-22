@@ -9,8 +9,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.12.0
 	github.com/WulfgarW/sensonet v0.0.7
 	github.com/WulfgarW/sensonetEbus v0.0.5
-	github.com/andig/evopt v0.0.0-20251030151600-82023795e6f5
-	github.com/andig/go-powerwall v0.2.1-0.20230808194509-dd70cdb6e140
+	github.com/andig/go-powerwall v0.3.0
 	github.com/andig/gosunspec v0.0.0-20240918203654-860ce51d602b
 	github.com/andig/mbserver v0.0.0-20230310211055-1d29cbb5820e
 	github.com/asaskevich/EventBus v0.0.0-20200907212545-49d423059eef

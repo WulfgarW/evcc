@@ -2096,9 +2096,8 @@ func (lp *Loadpoint) Update(sitePower, batteryBoostPower float64, consumption, f
 		if lp.chargerHasFeature(api.IntegratedDevice) {
 			title := lp.GetTitle()
 			lp.publish(keys.Title, title+c.ModeText())
-			if lp.socEstimator != nil {
-				soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
-				if err == nil {
+			if battery, ok := lp.charger.(api.Battery); ok {
+				if soc, err := soc.Guard(battery.Soc()); err == nil {
 					lp.publish(keys.VehicleSoc, soc)
 				}
 			}
@@ -2114,9 +2113,8 @@ func (lp *Loadpoint) Update(sitePower, batteryBoostPower float64, consumption, f
 				title = lp.vehicle.GetTitle()
 			}
 			lp.publish(keys.VehicleName, title+c.ModeText())
-			if lp.socEstimator != nil {
-				soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
-				if err == nil {
+			if battery, ok := lp.charger.(api.Battery); ok {
+				if soc, err := soc.Guard(battery.Soc()); err == nil {
 					lp.publish(keys.VehicleSoc, soc)
 				}
 			}
@@ -2135,9 +2133,8 @@ func (lp *Loadpoint) Update(sitePower, batteryBoostPower float64, consumption, f
 		if lp.chargerHasFeature(api.IntegratedDevice) {
 			title := lp.GetTitle()
 			lp.publish(keys.Title, title+c.ModeText())
-			if lp.socEstimator != nil {
-				soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
-				if err == nil {
+			if battery, ok := lp.charger.(api.Battery); ok {
+				if soc, err := soc.Guard(battery.Soc()); err == nil {
 					lp.publish(keys.VehicleSoc, soc)
 				}
 			}
@@ -2153,9 +2150,8 @@ func (lp *Loadpoint) Update(sitePower, batteryBoostPower float64, consumption, f
 				title = lp.vehicle.GetTitle()
 			}
 			lp.publish(keys.VehicleName, title+c.ModeText())
-			if lp.socEstimator != nil {
-				soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
-				if err == nil {
+			if battery, ok := lp.charger.(api.Battery); ok {
+				if soc, err := soc.Guard(battery.Soc()); err == nil {
 					lp.publish(keys.VehicleSoc, soc)
 				}
 			}
@@ -2178,9 +2174,8 @@ func (lp *Loadpoint) Update(sitePower, batteryBoostPower float64, consumption, f
 	}); ok {
 		title := lp.GetTitle()
 		lp.publish(keys.Title, title+c.ModeText())
-		if lp.socEstimator != nil {
-			soc, err := lp.socEstimator.Soc(lp.getChargedEnergy())
-			if err == nil {
+		if battery, ok := lp.charger.(api.Battery); ok {
+			if soc, err := soc.Guard(battery.Soc()); err == nil {
 				lp.publish(keys.VehicleSoc, soc)
 			}
 		}
