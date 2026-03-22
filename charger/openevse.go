@@ -28,7 +28,7 @@ func init() {
 	registry.Add("openevse", NewOpenEVSEFromConfig)
 }
 
-//go:generate go tool decorate -f decorateOpenEVSE -b *OpenEVSE -r api.Charger -t "api.PhaseSwitcher,Phases1p3p,func(int) error"
+//go:generate go tool decorate -f decorateOpenEVSE -b *OpenEVSE -r api.Charger -t api.PhaseSwitcher
 
 // NewOpenEVSEFromConfig creates an OpenEVSE charger from generic config
 func NewOpenEVSEFromConfig(other map[string]any) (api.Charger, error) {
@@ -93,7 +93,7 @@ func (c *OpenEVSE) setOverride() error {
 	uri := fmt.Sprintf("%s/override", c.uri)
 
 	if err := c.GetJSON(uri, &data); err != nil {
-		if err.Error() != "unexpected status: 404 (Not Found)" {
+		if se, ok := errors.AsType[*request.StatusError](err); !ok || !se.HasStatus(404) {
 			return err
 		}
 	}
