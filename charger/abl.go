@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/evcc-io/evcc/api"
+	"github.com/evcc-io/evcc/api/implement"
 	"github.com/evcc-io/evcc/util"
 	"github.com/evcc-io/evcc/util/modbus"
 	"github.com/evcc-io/evcc/util/sponsor"
@@ -31,6 +32,7 @@ import (
 
 // ABLeMH charger implementation
 type ABLeMH struct {
+	implement.Caps
 	conn *modbus.Connection
 	curr uint16
 }
@@ -80,33 +82,22 @@ func init() {
 
 // NewABLeMHFromConfig creates a ABLeMH charger from generic config
 func NewABLeMHFromConfig(ctx context.Context, other map[string]any) (api.Charger, error) {
-	cc := struct {
-		modbus.Settings `mapstructure:",squash"`
-		Timeout         time.Duration
-	}{
-		Settings: modbus.Settings{
-			ID: 1,
-		},
+	cc := modbus.Settings{
+		ID: 1,
 	}
 
 	if err := util.DecodeOther(other, &cc); err != nil {
 		return nil, err
 	}
 
-	return NewABLeMH(ctx, cc.URI, cc.Device, cc.Comset, cc.Baudrate, cc.ID, cc.Timeout)
+	return NewABLeMH(ctx, cc)
 }
 
-//go:generate go tool decorate -f decorateABLeMH -b *ABLeMH -r api.Charger -t api.Meter,api.PhaseCurrents
-
 // NewABLeMH creates ABLeMH charger
-func NewABLeMH(ctx context.Context, uri, device, comset string, baudrate int, slaveID uint8, timeout time.Duration) (api.Charger, error) {
-	conn, err := modbus.NewConnection(ctx, uri, device, comset, baudrate, modbus.Ascii, slaveID)
+func NewABLeMH(ctx context.Context, settings modbus.Settings) (api.Charger, error) {
+	conn, err := settings.Connection(ctx, modbus.Ascii)
 	if err != nil {
 		return nil, err
-	}
-
-	if timeout > 0 {
-		conn.Timeout(timeout)
 	}
 
 	if !sponsor.IsAuthorized() {
@@ -117,6 +108,7 @@ func NewABLeMH(ctx context.Context, uri, device, comset string, baudrate int, sl
 	conn.Logger(log.TRACE)
 
 	wb := &ABLeMH{
+		Caps: implement.New(),
 		conn: conn,
 		curr: uint16(6 / 0.06),
 	}
@@ -125,7 +117,8 @@ func NewABLeMH(ctx context.Context, uri, device, comset string, baudrate int, sl
 
 	// check presence of current sensor
 	if err == nil && (b[3]&ablSensorPresent != 0) {
-		return decorateABLeMH(wb, wb.currentPower, wb.currents), nil
+		implement.Has(wb, implement.Meter(wb.currentPower))
+		implement.Has(wb, implement.PhaseCurrents(wb.currents))
 	}
 
 	return wb, nil

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/evcc-io/evcc/api"
+	"github.com/evcc-io/evcc/api/implement"
 	"github.com/evcc-io/evcc/meter/measurement"
 	"github.com/evcc-io/evcc/util"
 	"github.com/evcc-io/evcc/util/modbus"
@@ -34,11 +34,10 @@ func NewMbmdFromConfig(ctx context.Context, other map[string]any) (api.Meter, er
 		batterySocLimits   `mapstructure:",squash"`
 		modbus.Settings    `mapstructure:",squash"`
 		Power, Energy, Soc string
+		ReturnEnergy       string
 		Currents           []string
 		Voltages           []string
 		Powers             []string
-		Delay              time.Duration
-		Timeout            time.Duration
 	}{
 		Power: "Power",
 		Settings: modbus.Settings{
@@ -60,16 +59,10 @@ func NewMbmdFromConfig(ctx context.Context, other map[string]any) (api.Meter, er
 	modbus.Lock()
 	defer modbus.Unlock()
 
-	conn, err := modbus.NewConnection(ctx, cc.URI, cc.Device, cc.Comset, cc.Baudrate, cc.Settings.Protocol(), cc.ID)
+	conn, err := cc.Settings.Connection(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	// set non-default timeout
-	conn.Timeout(cc.Timeout)
-
-	// set non-default delay
-	conn.Delay(cc.Delay)
 
 	log := util.NewLogger("modbus")
 	conn.Logger(log.TRACE)
@@ -91,16 +84,39 @@ func NewMbmdFromConfig(ctx context.Context, other map[string]any) (api.Meter, er
 	if err != nil {
 		return nil, fmt.Errorf("invalid measurement for power: %s", cc.Power)
 	}
+	m, _ := NewConfigurable(powerG)
 
 	// decorate energy
-	var totalEnergy func() (float64, error)
 	if cc.Energy != "" {
-		g, err := mbmd.deviceOp(ops, cc.Energy)
+		totalEnergy, err := mbmd.deviceOp(ops, cc.Energy)
 		if err != nil {
 			return nil, fmt.Errorf("invalid measurement for energy: %s", cc.Energy)
 		}
+		implement.Has(m, implement.MeterEnergy(totalEnergy))
+	}
 
-		totalEnergy = g
+	// decorate return energy
+	if cc.ReturnEnergy != "" {
+		returnEnergy, err := mbmd.deviceOp(ops, cc.ReturnEnergy)
+		if err != nil {
+			return nil, fmt.Errorf("invalid measurement for returnenergy: %s", cc.ReturnEnergy)
+		}
+		implement.Has(m, implement.MeterReturnEnergy(returnEnergy))
+	}
+
+	// decorate soc
+	if cc.Soc != "" {
+		soc, err := mbmd.deviceOp(ops, cc.Soc)
+		if err != nil {
+			return nil, fmt.Errorf("invalid measurement for soc: %s", cc.Soc)
+		}
+		implement.Has(m, implement.Battery(soc))
+
+		implement.May(m, implement.BatteryCapacity(cc.batteryCapacity.Decorator()))
+		implement.May(m, implement.BatterySocLimiter(cc.batterySocLimits.Decorator()))
+		implement.May(m, implement.BatteryPowerLimiter(cc.batteryPowerLimits.Decorator()))
+
+		return m, nil
 	}
 
 	// decorate currents
@@ -108,37 +124,23 @@ func NewMbmdFromConfig(ctx context.Context, other map[string]any) (api.Meter, er
 	if err != nil {
 		return nil, fmt.Errorf("currents: %w", err)
 	}
+	implement.May(m, implement.PhaseCurrents(currentsG))
 
 	// decorate voltages
 	voltagesG, err := mbmd.buildPhaseProviders(ops, cc.Voltages)
 	if err != nil {
 		return nil, fmt.Errorf("voltages: %w", err)
 	}
+	implement.May(m, implement.PhaseVoltages(voltagesG))
 
 	// decorate powers
 	powersG, err := mbmd.buildPhaseProviders(ops, cc.Powers)
 	if err != nil {
 		return nil, fmt.Errorf("powers: %w", err)
 	}
+	implement.May(m, implement.PhasePowers(powersG))
 
-	// decorate soc
-	var soc func() (float64, error)
-	if cc.Soc != "" {
-		g, err := mbmd.deviceOp(ops, cc.Soc)
-		if err != nil {
-			return nil, fmt.Errorf("invalid measurement for soc: %s", cc.Soc)
-		}
-
-		soc = g
-	}
-
-	m, _ := NewConfigurable(powerG)
-
-	if soc != nil {
-		return m.DecorateBattery(totalEnergy, soc, cc.batteryCapacity.Decorator(), cc.batterySocLimits.Decorator(), cc.batteryPowerLimits.Decorator(), nil), nil
-	}
-
-	return m.Decorate(totalEnergy, currentsG, voltagesG, powersG, nil), nil
+	return m, nil
 }
 
 // deviceOp checks is RS485 device supports operation

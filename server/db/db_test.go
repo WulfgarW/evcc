@@ -2,8 +2,10 @@ package db
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUnitNewDriver(t *testing.T) {
@@ -48,7 +50,7 @@ func TestUnitNewDriver(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Reset file path
-			FilePath = ""
+			filePath = ""
 
 			driver, err := New(test.driver, test.dsn)
 			if test.wantErr {
@@ -59,7 +61,40 @@ func TestUnitNewDriver(t *testing.T) {
 				assert.NotNil(t, driver)
 			}
 
-			assert.Equal(t, test.expectedFilePath, FilePath)
+			assert.Equal(t, test.expectedFilePath, FilePath())
 		})
+	}
+}
+
+type migrationParent struct {
+	Id int `gorm:"column:id;primarykey"`
+}
+
+func (migrationParent) TableName() string { return "migration_parents" }
+
+type migrationChild struct {
+	ParentId int             `gorm:"column:parent_id"`
+	Parent   migrationParent `gorm:"foreignkey:ParentId;references:Id"`
+}
+
+func (migrationChild) TableName() string { return "migration_children" }
+
+// TestUnitMigrateConstraint guards against migrator implementations that pin a
+// connection and then query the pool again: the single connection deadlocks.
+func TestUnitMigrateConstraint(t *testing.T) {
+	db, err := New("sqlite", t.TempDir()+"/evcc.db")
+	require.NoError(t, err)
+
+	// existing table without the foreign key, forces the migrator to recreate it
+	require.NoError(t, db.Exec("CREATE TABLE migration_children (parent_id integer)").Error)
+
+	done := make(chan error, 1)
+	go func() { done <- db.AutoMigrate(new(migrationParent), new(migrationChild)) }()
+
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(10 * time.Second):
+		t.Fatal("AutoMigrate deadlocked")
 	}
 }

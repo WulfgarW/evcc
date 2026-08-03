@@ -1,0 +1,31 @@
+template: smart-evse
+products:
+  - brand: Stegen Electronics
+    description:
+      generic: SmartEVSE
+capabilities: ["mA", "rfid", "1p3p", "dim"]
+requirements:
+  description:
+    de: |
+      Anbindung über die REST API mit Firmware >= 3.11.2.
+      Das Gerät wird in den konfigurierten Modus versetzt und steuert den Ladestrom über `override_current`.
+    en: |
+      Uses the REST API, requires firmware >= 3.11.2.
+      The device is put into the configured mode and controls the charge current via `override_current`.
+params:
+  - name: host
+  - name: cache
+    default: 1s
+  - name: chargeMode
+    default: normal
+    advanced: true
+    type: choice
+    choice: ["normal", "smart"]
+    description:
+      en: Charge mode
+      de: Lademodus
+render: |
+  type: smart-evse
+  uri: http://{{ .host }}
+  cache: {{ .cache }}
+  chargeMode: {{ .chargeMode }}

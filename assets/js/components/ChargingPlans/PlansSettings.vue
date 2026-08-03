@@ -1,5 +1,5 @@
 <template>
-	<div class="mt-4">
+	<div>
 		<div class="form-group d-lg-flex align-items-baseline justify-content-between">
 			<div class="container px-0">
 				<ChargingPlanStaticSettings
@@ -79,19 +79,20 @@ import formatter from "@/mixins/formatter";
 import collector from "@/mixins/collector";
 import api from "@/api";
 import deepEqual from "@/utils/deepEqual";
-import convertRates from "@/utils/convertRates";
 import { debounceLeading } from "@/utils/debounceLeading";
 import { defineComponent, type PropType } from "vue";
-import type { Vehicle, CURRENCY, Forecast } from "@/types/evcc";
 import type {
-	StaticPlan,
-	RepeatingPlan,
-	PlanWrapper,
-	StaticSocPlan,
-	StaticEnergyPlan,
+	CURRENCY,
+	Forecast,
 	PlanResponse,
 	PlanStrategy,
-} from "./types";
+	PlanWrapper,
+	RepeatingPlan,
+	StaticEnergyPlan,
+	StaticPlan,
+	StaticSocPlan,
+	Vehicle,
+} from "@/types/evcc";
 
 export default defineComponent({
 	name: "ChargingPlansSettings",
@@ -153,8 +154,11 @@ export default defineComponent({
 			return this.collectProps(Warnings);
 		},
 		chargingPlanPreviewProps(): any {
-			const forecastSlots = this.forecast?.planner || [];
-			const rates = convertRates(forecastSlots);
+			const rates = (this.forecast?.planner || []).map(({ start, end, value }) => ({
+				start: new Date(start),
+				end: new Date(end),
+				value,
+			}));
 			const { duration, plan, power, planTime } = this.plan;
 			const targetTime = planTime ? new Date(planTime) : null;
 			const { currency, smartCostType } = this;

@@ -24,6 +24,7 @@ import (
 	"math"
 
 	"github.com/evcc-io/evcc/api"
+	"github.com/evcc-io/evcc/api/implement"
 	"github.com/evcc-io/evcc/util"
 	"github.com/evcc-io/evcc/util/modbus"
 	"github.com/evcc-io/evcc/util/sponsor"
@@ -46,6 +47,7 @@ var igyRegMaxCurrents = []uint16{1012, 1014, 1016} // max current per phase
 
 // Innogy is an api.Charger implementation for Innogy eBox wallboxes.
 type Innogy struct {
+	implement.Caps
 	conn        *modbus.Connection
 	curr        float64
 	hasVoltages bool
@@ -65,29 +67,24 @@ func NewInnogyFromConfig(ctx context.Context, other map[string]any) (api.Charger
 		return nil, err
 	}
 
-	wb, err := NewInnogy(ctx, cc.URI, cc.ID)
+	wb, err := NewInnogy(ctx, cc)
 	if err != nil {
 		return nil, err
 	}
 
-	var totalEnergy func() (float64, error)
-	var voltages func() (float64, float64, float64, error)
-
 	// check presence of energy meter & voltages registers
 	if b, err := wb.conn.ReadInputRegisters(igyRegModbusTableVersion, 1); err == nil && binary.BigEndian.Uint16(b) >= 6 {
-		totalEnergy = wb.totalEnergy
-		voltages = wb.voltages
+		implement.Has(wb, implement.MeterEnergy(wb.totalEnergy))
+		implement.Has(wb, implement.PhaseVoltages(wb.voltages))
 		wb.hasVoltages = true
 	}
 
-	return decorateInnogy(wb, totalEnergy, voltages), nil
+	return wb, nil
 }
 
-//go:generate go tool decorate -f decorateInnogy -b *Innogy -r api.Charger -t api.MeterEnergy,api.PhaseVoltages
-
 // NewInnogy creates a Innogy charger
-func NewInnogy(ctx context.Context, uri string, id uint8) (*Innogy, error) {
-	conn, err := modbus.NewConnection(ctx, uri, "", "", 0, modbus.Tcp, id)
+func NewInnogy(ctx context.Context, settings modbus.TcpSettings) (*Innogy, error) {
+	conn, err := settings.Connection(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +97,7 @@ func NewInnogy(ctx context.Context, uri string, id uint8) (*Innogy, error) {
 	conn.Logger(log.TRACE)
 
 	wb := &Innogy{
+		Caps: implement.New(),
 		conn: conn,
 		curr: 6,
 	}

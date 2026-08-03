@@ -1,10 +1,10 @@
 <template>
 	<div v-if="chartData.labels.length > 1" class="row">
-		<div class="col-12 col-md-6 mb-3">
+		<div class="col-12 col-md-6 col-lg-12 col-xxl-6 mb-3">
 			<PolarArea :data="chartData" :options="options" />
 		</div>
-		<div class="col-12 col-md-6 d-flex align-items-center py-0 py-md-3">
-			<LegendList :legends="legends" grid />
+		<div class="col-12 col-md-6 col-lg-12 col-xxl-6 d-flex align-items-center">
+			<LegendList :legends="legends" :device-colors="deviceColors" grid />
 		</div>
 	</div>
 </template>
@@ -17,7 +17,7 @@ import formatter from "@/mixins/formatter";
 import colors, { dimColor } from "@/colors";
 import LegendList from "./LegendList.vue";
 import { defineComponent, type PropType } from "vue";
-import type { CURRENCY } from "@/types/evcc";
+import type { CURRENCY, DeviceColors } from "@/types/evcc";
 import { TYPES, GROUPS, type Session } from "./types.ts";
 
 registerChartComponents([RadialLinearScale, ArcElement, Legend, Tooltip]);
@@ -34,6 +34,7 @@ export default defineComponent({
 			default: GROUPS.LOADPOINT,
 		},
 		colorMappings: { type: Object, default: () => ({ loadpoint: {}, vehicle: {} }) },
+		deviceColors: { type: Object as PropType<DeviceColors>, default: () => ({}) },
 		suggestedMax: { type: Number, default: 0 },
 		costType: { type: String as PropType<TYPES>, default: TYPES.PRICE },
 	},
@@ -84,6 +85,7 @@ export default defineComponent({
 					label: label,
 					color: dataset.borderColor[index],
 					value: this.formatValue(dataValue),
+					id: label || undefined,
 				};
 			});
 		},
@@ -128,7 +130,7 @@ export default defineComponent({
 						beginAtZero: false,
 						ticks: {
 							color: colors.muted || "",
-							backdropColor: colors.background || "",
+							backdropColor: colors.box || "",
 							font: { size: 10 },
 							callback: this.formatValue,
 							maxTicksLimit: 6,

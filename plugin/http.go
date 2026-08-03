@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -26,6 +27,7 @@ type HTTP struct {
 	body        string
 	pipeline    *pipeline.Pipeline
 	mu          *sync.Mutex
+	log         *util.Logger
 }
 
 func init() {
@@ -99,39 +101,47 @@ func NewHTTP(log *util.Logger, method, uri string, insecure bool, cache time.Dur
 		Helper: request.NewHelper(log),
 		url:    uri,
 		method: method,
+		log:    log,
 	}
 
-	// override the transport to accept self-signed certificates
+	// build the cache stack without logging so the logging tripper
+	// can sit outside the cache and see cached responses too
+	var base http.RoundTripper = transport.Default()
 	if insecure {
-		p.Client.Transport = request.NewTripper(log, transport.Insecure())
+		base = transport.Insecure()
 	}
 
 	if cache > 0 {
-		// remove no-cache response headers
-		p.Client.Transport = &transport.Modifier{
+		// remove cache-busting response headers
+		base = &transport.Modifier{
 			Modifier: func(resp *http.Response) error {
-				dropNoCache(resp, "Cache-Control")
-				dropNoCache(resp, "Pragma")
+				dropCacheBusting(resp, "Cache-Control")
+				dropCacheBusting(resp, "Pragma")
+				// httpcache derives freshness from the response Date; stamp one
+				// for devices that omit it, else every read is treated as stale
+				if resp.Header.Get("Date") == "" {
+					resp.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
+				}
 				return nil
 			},
-			Base: p.Client.Transport,
+			Base: base,
 		}
 	}
 
 	// http cache
-	p.Client.Transport = &httpcache.Transport{
+	base = &httpcache.Transport{
 		Cache:               mc,
 		MarkCachedResponses: true,
-		Transport:           p.Client.Transport,
+		Transport:           base,
 	}
 
 	if cache > 0 {
 		cacheHeader := fmt.Sprintf("max-age=%d, must-revalidate", int(cache.Seconds()))
-		p.Client.Transport = &transport.Decorator{
+		base = &transport.Decorator{
 			Decorator: transport.DecorateHeaders(map[string]string{
 				"Cache-Control": cacheHeader,
 			}),
-			Base: p.Client.Transport,
+			Base: base,
 		}
 
 		// for cached requests enforce single inflight GET
@@ -140,24 +150,42 @@ func NewHTTP(log *util.Logger, method, uri string, insecure bool, cache time.Dur
 		}
 	}
 
+	// logging is outermost so cache hits are visible in the trace log
+	p.Client.Transport = request.NewTripper(log, base)
+
 	return p
 }
 
-func dropNoCache(resp *http.Response, header string) {
-	if h := resp.Header.Get(header); h != "" {
-		var hh []string
+// dropCacheBusting removes response directives that defeat the cache layer
+// (no-cache, no-store and max-age=0) so a configured cache duration takes effect.
+func dropCacheBusting(resp *http.Response, header string) {
+	h := resp.Header.Get(header)
+	if h == "" {
+		return
+	}
 
-		for h := range strings.SplitSeq(h, ",") {
-			if s := strings.TrimSpace(h); strings.ToLower(s) != "no-cache" {
-				hh = append(hh, s)
+	var hh []string
+
+	for token := range strings.SplitSeq(h, ",") {
+		s := strings.TrimSpace(token)
+
+		name, value, _ := strings.Cut(s, "=")
+		switch strings.ToLower(strings.TrimSpace(name)) {
+		case "no-cache", "no-store":
+			continue
+		case "max-age":
+			if v, err := strconv.Atoi(strings.TrimSpace(value)); err == nil && v <= 0 {
+				continue
 			}
 		}
 
-		if len(hh) == 0 {
-			resp.Header.Del(header)
-		} else {
-			resp.Header.Set(header, strings.Join(hh, ", "))
-		}
+		hh = append(hh, s)
+	}
+
+	if len(hh) == 0 {
+		resp.Header.Del(header)
+	} else {
+		resp.Header.Set(header, strings.Join(hh, ", "))
 	}
 }
 
@@ -193,14 +221,52 @@ func (p *HTTP) request(url string, body string) ([]byte, error) {
 		return []byte{}, err
 	}
 
-	val, err := p.DoBody(req)
+	resp, err := p.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	val, err := request.ReadBody(resp)
 	if err != nil {
 		if err2 := knownErrors(val); err2 != nil {
 			err = err2
 		}
+
+		return val, err
 	}
 
-	return val, err
+	// warn on uncached GET polling: a repeated roundtrip means neither a configured
+	// cache nor the device's own response headers spared it. cache hits are exempt.
+	// only successful responses count, a failed one is retried by the caller
+	if p.method == http.MethodGet && p.mu == nil && resp.Header.Get(httpcache.XFromCache) == "" {
+		if repeatedGet(url, time.Now()) {
+			p.log.WARN.Printf("uncached request repeated within 1s, please report at https://github.com/evcc-io/evcc/issues: %s", url)
+		}
+	}
+
+	return val, nil
+}
+
+type httpAccess struct {
+	last   time.Time
+	warned bool
+}
+
+var (
+	httpSeenMu sync.Mutex
+	httpSeen   = make(map[string]httpAccess)
+)
+
+// repeatedGet reports the first time url is fetched again within a second, a sign
+// the response should be cached. It fires once per url to avoid log spam.
+func repeatedGet(url string, now time.Time) bool {
+	httpSeenMu.Lock()
+	defer httpSeenMu.Unlock()
+
+	a, seen := httpSeen[url]
+	warn := seen && !a.warned && now.Sub(a.last) < time.Second
+	httpSeen[url] = httpAccess{last: now, warned: a.warned || warn}
+	return warn
 }
 
 var _ Getters = (*HTTP)(nil)

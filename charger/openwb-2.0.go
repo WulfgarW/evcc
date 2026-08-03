@@ -6,12 +6,14 @@ import (
 	"fmt"
 
 	"github.com/evcc-io/evcc/api"
+	"github.com/evcc-io/evcc/api/implement"
 	"github.com/evcc-io/evcc/util"
 	"github.com/evcc-io/evcc/util/modbus"
 )
 
 // OpenWB20 charger implementation
 type OpenWB20 struct {
+	implement.Caps
 	conn    *modbus.Connection
 	enabled bool
 	curr    uint16
@@ -41,13 +43,12 @@ func init() {
 
 // https://openwb.de/main/wp-content/uploads/2023/10/ModbusTCP-openWB-series2-Pro-1.pdf
 
-//go:generate go tool decorate -f decorateOpenWB20 -b *OpenWB20 -r api.Charger -t api.PhaseSwitcher,api.Identifier
-
 // NewOpenWB20FromConfig creates a OpenWB20 charger from generic config
 func NewOpenWB20FromConfig(ctx context.Context, other map[string]any) (api.Charger, error) {
 	cc := struct {
 		Connector          uint16
 		Phases1p3p         bool
+		Identify           bool
 		modbus.TcpSettings `mapstructure:",squash"`
 	}{
 		Connector: 1,
@@ -60,29 +61,27 @@ func NewOpenWB20FromConfig(ctx context.Context, other map[string]any) (api.Charg
 		return nil, err
 	}
 
-	wb, err := NewOpenWB20(ctx, cc.URI, cc.ID, cc.Connector)
+	wb, err := NewOpenWB20(ctx, cc.TcpSettings, cc.Connector)
 	if err != nil {
 		return nil, err
 	}
 
-	var phases1p3p func(int) error
 	if cc.Phases1p3p {
-		phases1p3p = wb.phases1p3p
+		implement.Has(wb, implement.PhaseSwitcher(wb.phases1p3p))
 	}
 
-	var identify func() (string, error)
-	if _, err := wb.identify(); err == nil {
-		identify = wb.identify
+	if cc.Identify {
+		implement.Has(wb, implement.Identifier(wb.identify))
 	}
 
-	return decorateOpenWB20(wb, phases1p3p, identify), nil
+	return wb, nil
 }
 
 // NewOpenWB20 creates OpenWB20 charger
-func NewOpenWB20(ctx context.Context, uri string, slaveID uint8, connector uint16) (*OpenWB20, error) {
-	uri = util.DefaultPort(uri, 1502)
+func NewOpenWB20(ctx context.Context, settings modbus.TcpSettings, connector uint16) (*OpenWB20, error) {
+	settings.URI = util.DefaultPort(settings.URI, 1502)
 
-	conn, err := modbus.NewConnection(ctx, uri, "", "", 0, modbus.Tcp, slaveID)
+	conn, err := settings.Connection(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +90,7 @@ func NewOpenWB20(ctx context.Context, uri string, slaveID uint8, connector uint1
 	conn.Logger(log.TRACE)
 
 	wb := &OpenWB20{
+		Caps: implement.New(),
 		conn: conn,
 		curr: 6 * 100,
 		base: (connector - 1) * 100,

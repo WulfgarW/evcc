@@ -6,6 +6,7 @@ __debug_bin*
 *.db
 *.gz
 *.py
+testdata/**/*
 *.log
 *.json
 !i18n/*.json
@@ -17,6 +18,8 @@ __debug_bin*
 !assets/js/**/*.yaml
 !package*.json
 !evcc.dist.yaml
+!server/openapi.state.yaml
+!.coderabbit.yaml
 !tests/**/*.evcc.yaml
 !tests/**/*.tpl.yaml
 !tsconfig.json
@@ -54,3 +57,5 @@ debug_sensonet_reldata.txt
 debug_sensonet_system.txt
 /tsconfig.tsbuildinfo
 *storybook.log
+/graphify-out/
+.graphifyignore

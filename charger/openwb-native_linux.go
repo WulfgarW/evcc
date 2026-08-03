@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/evcc-io/evcc/api"
+	"github.com/evcc-io/evcc/api/implement"
 	"github.com/evcc-io/evcc/charger/openwb/native"
 	"github.com/evcc-io/evcc/util"
 	"github.com/evcc-io/evcc/util/modbus"
@@ -24,6 +25,7 @@ type openWbGpioLines struct {
 // OpenWbNative charger implementation
 type OpenWbNative struct {
 	api.Charger
+	implement.Caps
 	log         *util.Logger
 	rfId        native.RfIdContainer
 	cpWait      time.Duration
@@ -42,8 +44,6 @@ func init() {
 	registry.AddCtx("openwb-native", NewOpenWbNativeFromConfig)
 }
 
-//go:generate go tool decorate -o openwb-native_decorators_linux.go -f decorateOpenWbNative -b *OpenWbNative -r api.Charger -t api.ChargerEx,api.PhaseSwitcher,api.Identifier
-
 // NewOpenWbNativeFromConfig creates an OpenWbNative charger from generic config
 func NewOpenWbNativeFromConfig(ctx context.Context, other map[string]any) (api.Charger, error) {
 	cc := struct {
@@ -59,6 +59,7 @@ func NewOpenWbNativeFromConfig(ctx context.Context, other map[string]any) (api.C
 			Baudrate: 9600,
 			Comset:   "8N1",
 			ID:       1,
+			Delay:    200 * time.Millisecond,
 		},
 	}
 
@@ -73,40 +74,34 @@ func NewOpenWbNativeFromConfig(ctx context.Context, other map[string]any) (api.C
 		return nil, fmt.Errorf("invalid cpwait value: %v, needs to be greater than %s", cc.CpWait, minCpWaitTime)
 	}
 
-	return NewOpenWbNative(ctx, cc.URI, cc.Device, cc.Comset, cc.Baudrate, cc.Protocol(), cc.ID, cc.Phases1p3p, cc.RfId, cc.CpWait, cc.Connector, cc.Chip)
+	return NewOpenWbNative(ctx, cc.Settings, cc.Phases1p3p, cc.RfId, cc.CpWait, cc.Connector, cc.Chip)
 }
 
 // NewOpenWbNative creates OpenWbNative charger
-func NewOpenWbNative(ctx context.Context, uri, device, comset string, baudrate int, proto modbus.Protocol, slaveID uint8, hasPhases1p3p bool, rfIdVidPid string, cpWait time.Duration, connector int, chip string) (api.Charger, error) {
+func NewOpenWbNative(ctx context.Context, settings modbus.Settings, hasPhases1p3p bool, rfIdVidPid string, cpWait time.Duration, connector int, chip string) (api.Charger, error) {
 	log := util.NewLogger("openwb-native")
-	log.DEBUG.Printf("Creating OpenWB native with 3 phases %t, rfid %s, cpwait %s, connector %d", hasPhases1p3p, rfIdVidPid, cpWait.String(), connector)
 
-	evse, err := NewEvseDIN(ctx, uri, device, comset, baudrate, proto, slaveID)
+	evse, err := NewEvseDIN(ctx, settings)
 	if err != nil {
 		return nil, err
 	}
 
 	wb := &OpenWbNative{
 		Charger:     evse,
+		Caps:        implement.New(),
 		log:         log,
 		cpWait:      cpWait,
 		connector:   connector,
 		chargeState: api.StatusNone,
 	}
 
-	var (
-		phases1p3p       func(int) error
-		identify         func() (string, error)
-		maxCurrentMillis func(float64) error
-	)
-
-	if ex, ok := evse.(api.ChargerEx); ok {
-		maxCurrentMillis = ex.MaxCurrentMillis
+	if ex, ok := api.Cap[api.ChargerEx](evse); ok {
+		implement.May(wb, implement.ChargerEx(ex.MaxCurrentMillis))
 	}
 
 	// configure special external hardware features
 	if hasPhases1p3p {
-		phases1p3p = wb.phases1p3p
+		implement.May(wb, implement.PhaseSwitcher(wb.phases1p3p))
 	}
 
 	if rfIdVidPid != "" {
@@ -114,8 +109,7 @@ func NewOpenWbNative(ctx context.Context, uri, device, comset string, baudrate i
 		if err != nil {
 			return nil, err
 		}
-
-		identify = wb.identify
+		implement.May(wb, implement.Identifier(wb.identify))
 	}
 
 	// initialize GPIO lines and set pins to output
@@ -135,7 +129,14 @@ func NewOpenWbNative(ctx context.Context, uri, device, comset string, baudrate i
 		*gpioConfig.dst = line
 	}
 
-	return decorateOpenWbNative(wb, maxCurrentMillis, phases1p3p, identify), nil
+	go func() {
+		<-ctx.Done()
+		wb.gpio.cp.Close()
+		wb.gpio.ph1.Close()
+		wb.gpio.ph3.Close()
+	}()
+
+	return wb, nil
 }
 
 // Status implements the api.Charger interface

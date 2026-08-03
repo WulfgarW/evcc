@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/evcc-io/evcc/api"
+	"github.com/evcc-io/evcc/api/implement"
 	"github.com/evcc-io/evcc/util"
 	"github.com/evcc-io/evcc/util/modbus"
 	"github.com/evcc-io/evcc/util/sponsor"
@@ -30,6 +31,7 @@ import (
 
 // KSE charger implementation
 type KSE struct {
+	implement.Caps
 	log     *util.Logger
 	conn    *modbus.Connection
 	curr    uint16
@@ -68,14 +70,12 @@ func NewKSEFromConfig(ctx context.Context, other map[string]any) (api.Charger, e
 		return nil, err
 	}
 
-	return NewKSE(ctx, cc.URI, cc.Device, cc.Comset, cc.Baudrate, cc.ID)
+	return NewKSE(ctx, cc)
 }
 
-//go:generate go tool decorate -f decorateKSE -b *KSE -r api.Charger -t api.PhaseSwitcher,api.PhaseGetter,api.Identifier
-
 // NewKSE creates KSE charger
-func NewKSE(ctx context.Context, uri, device, comset string, baudrate int, slaveID uint8) (api.Charger, error) {
-	conn, err := modbus.NewConnection(ctx, uri, device, comset, baudrate, modbus.Rtu, slaveID)
+func NewKSE(ctx context.Context, settings modbus.Settings) (api.Charger, error) {
+	conn, err := settings.Connection(ctx, modbus.Rtu)
 	if err != nil {
 		return nil, err
 	}
@@ -88,31 +88,26 @@ func NewKSE(ctx context.Context, uri, device, comset string, baudrate int, slave
 	conn.Logger(log.TRACE)
 
 	wb := &KSE{
+		Caps: implement.New(),
 		log:  log,
 		conn: conn,
 		curr: 6, // assume min current
 	}
 
-	var (
-		phases1p3p func(int) error
-		getPhases  func() (int, error)
-		identify   func() (string, error)
-	)
-
 	// check presence of 1p3p switching
-	if b, err := wb.conn.ReadInputRegisters(kseRegFirmwareVersion, 1); err == nil && b[0] >= 0x52 { // >= HW Rev „R“
+	if b, err := wb.conn.ReadInputRegisters(kseRegFirmwareVersion, 1); err == nil && b[0] >= 0x52 { // >= HW Rev „R”
 		wb.has1p3p = true
-		phases1p3p = wb.phases1p3p
-		getPhases = wb.getPhases
+		implement.Has(wb, implement.PhaseSwitcher(wb.phases1p3p))
+		implement.Has(wb, implement.PhaseGetter(wb.getPhases))
 	}
 
 	// check presence of rfid
 	if b, err := wb.conn.ReadDiscreteInputs(kseRegRFIDinstalled, 1); err == nil && b[0] != 0 {
 		wb.hasRfid = true
-		identify = wb.identify
+		implement.Has(wb, implement.Identifier(wb.identify))
 	}
 
-	return decorateKSE(wb, phases1p3p, getPhases, identify), nil
+	return wb, nil
 }
 
 // Status implements the api.Charger interface

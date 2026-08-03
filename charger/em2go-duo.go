@@ -64,32 +64,30 @@ func NewEm2GoDuoFromConfig(ctx context.Context, other map[string]any) (api.Charg
 		modbus.TcpSettings `mapstructure:",squash"`
 		Connector          int
 	}{
-		TcpSettings: modbus.TcpSettings{ID: 255},
-		Connector:   1,
+		TcpSettings: modbus.TcpSettings{
+			ID:    255,
+			Delay: 60 * time.Millisecond,
+		},
+		Connector: 1,
 	}
 
 	if err := util.DecodeOther(other, &cc); err != nil {
 		return nil, err
 	}
 
-	return NewEm2GoDuo(ctx, cc.URI, cc.ID, cc.Connector)
+	return NewEm2GoDuo(ctx, cc.TcpSettings, cc.Connector)
 }
 
 // NewEm2GoDuo creates Em2GoDuo charger
-func NewEm2GoDuo(ctx context.Context, uri string, slaveID uint8, connector int) (api.Charger, error) {
+func NewEm2GoDuo(ctx context.Context, settings modbus.TcpSettings, connector int) (api.Charger, error) {
 	if connector < 1 || connector > 2 {
 		return nil, fmt.Errorf("invalid connector %d, must be 1 or 2", connector)
 	}
 
-	uri = util.DefaultPort(uri, 502)
-
-	conn, err := modbus.NewConnection(ctx, uri, "", "", 0, modbus.Tcp, slaveID)
+	conn, err := settings.Connection(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	// Add delay of 60 milliseconds between requests
-	conn.Delay(60 * time.Millisecond)
 
 	log := util.NewLogger("em2go-duo")
 	conn.Logger(log.TRACE)
@@ -101,7 +99,30 @@ func NewEm2GoDuo(ctx context.Context, uri string, slaveID uint8, connector int) 
 		connector: connector,
 	}
 
+	b, err := wb.conn.ReadHoldingRegisters(em2GoDuoRegCommTimeout, 1)
+	if err != nil {
+		return nil, fmt.Errorf("failsafe timeout: %w", err)
+	}
+	if u := binary.BigEndian.Uint16(b); u > 0 {
+		go wb.heartbeat(ctx, time.Duration(u)*time.Second/2)
+	}
+
 	return wb, nil
+}
+
+// heartbeat keeps the Modbus connection alive to prevent the charger from
+// entering its failsafe state when the configured communication timeout expires.
+func (wb *Em2GoDuo) heartbeat(ctx context.Context, interval time.Duration) {
+	for tick := time.Tick(interval); ; {
+		select {
+		case <-tick:
+			if _, err := wb.conn.ReadHoldingRegisters(em2GoDuoRegSafeCurrent, 1); err != nil {
+				wb.log.ERROR.Println("heartbeat:", err)
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 // Status implements the api.Charger interface
