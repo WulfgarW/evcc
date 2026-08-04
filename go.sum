@@ -20,8 +20,8 @@ github.com/PuerkitoBio/goquery v1.12.0/go.mod h1:802ej+gV2y7bbIhOIoPY5sT183ZW0YF
 github.com/RaveNoX/go-jsoncommentstrip v1.0.0/go.mod h1:78ihd09MekBnJnxpICcwzCMzGrKSKYe4AqU6PDYYpjk=
 github.com/Shopify/toxiproxy v2.1.4+incompatible h1:TKdv8HiTLgE5wdJuEML90aBgNWsokNbMijUGhmcoBJc=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
-github.com/WulfgarW/sensonet v0.0.7 h1:WkrZF7UNoQVyQIvpaUPqZfKTvHfFXTRmSF/zMQKJo+Q=
-github.com/WulfgarW/sensonet v0.0.7/go.mod h1:GNOik1nTPswwtZ4bLpIRglEn9dNgEG79iOhVUq4IKgA=
+github.com/WulfgarW/sensonet v0.0.8 h1:CkKzQuGTmZiYQPOI7t9tYCynM0mVnl1UNWyiSY5a3cE=
+github.com/WulfgarW/sensonet v0.0.8/go.mod h1:uId+Lbatrz6CsUMXfj+zsRPdT5KHrh3H8YOk0xZU/9E=
 github.com/WulfgarW/sensonetEbus v0.0.5 h1:TBNnzzBQBuAqsMPNaSQAkuUo39WXtdZIzxyIKJjd8So=
 github.com/WulfgarW/sensonetEbus v0.0.5/go.mod h1:AlYMiWjwRF2OyzNxJjXdPv76RBEM7QHh/QEu5p3Bnjw=
 github.com/andig/eebus-go v0.0.0-20260725155950-e735091ff165 h1:mgx3N1XD29NtCtvbm1CEMJpz8lBUgMiSdH0Ku72pDP4=
